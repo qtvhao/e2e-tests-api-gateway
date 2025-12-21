@@ -55,6 +55,6 @@ test.describe('Authentication Flow', () => {
 test.describe('Error Handling', () => {
   test('should display 404 page for unknown routes', async ({ page }) => {
     await page.goto('/unknown-route-that-does-not-exist');
-    await expect(page.getByText(/not found|404/i)).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Page Not Found' })).toBeVisible();
   });
 });

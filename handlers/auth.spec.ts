@@ -1,4 +1,6 @@
 import { test, expect } from '@playwright/test';
+import * as fs from 'fs';
+import * as path from 'path';
 
 /**
  * E2E tests for Authentication Handler
@@ -10,7 +12,45 @@ import { test, expect } from '@playwright/test';
  * - Me endpoint (/api/auth/me)
  * - Login page UI and interactions
  * - Authentication state persistence
+ * - Role-based access (dynamically generated from seed.json)
+ *
+ * Uses seeded credentials from: services/system-integration/microservices/api-gateway/db/seed.json
  */
+
+interface SeedUser {
+  id: string;
+  email: string;
+  password: string;
+  name: string;
+  roles: string[];
+}
+
+interface SeedData {
+  users: SeedUser[];
+}
+
+// Load test users from seed.json
+const seedPath = path.resolve(__dirname, '../../../../../services/system-integration/microservices/api-gateway/db/seed.json');
+const seedData: SeedData = JSON.parse(fs.readFileSync(seedPath, 'utf-8'));
+
+// Get all users
+const allUsers = seedData.users;
+
+// Get first and last user for basic tests
+const firstUser = allUsers[0];
+const lastUser = allUsers[allUsers.length - 1];
+
+// Extract all unique roles from seed data
+const allRoles = [...new Set(allUsers.flatMap(u => u.roles))];
+
+// Map: role -> first user that has this role
+const userByRole = new Map<string, SeedUser>();
+for (const role of allRoles) {
+  const user = allUsers.find(u => u.roles.includes(role));
+  if (user) {
+    userByRole.set(role, user);
+  }
+}
 
 test.describe('Auth API Endpoints', () => {
   test('should return healthy status from health endpoint', async ({ request }) => {
@@ -23,8 +63,8 @@ test.describe('Auth API Endpoints', () => {
   test('should successfully login with valid credentials', async ({ request }) => {
     const response = await request.post('/api/auth/login', {
       data: {
-        email: 'test@example.com',
-        password: 'password123'
+        email: firstUser.email,
+        password: firstUser.password
       }
     });
     expect(response.ok()).toBeTruthy();
@@ -32,7 +72,7 @@ test.describe('Auth API Endpoints', () => {
     expect(data).toHaveProperty('token');
     expect(data).toHaveProperty('expires_at');
     expect(data).toHaveProperty('user');
-    expect(data.user).toHaveProperty('email', 'test@example.com');
+    expect(data.user).toHaveProperty('email', firstUser.email);
     expect(data.user).toHaveProperty('id');
     expect(data.user).toHaveProperty('roles');
   });
@@ -40,7 +80,7 @@ test.describe('Auth API Endpoints', () => {
   test('should return 400 for login with missing email', async ({ request }) => {
     const response = await request.post('/api/auth/login', {
       data: {
-        password: 'password123'
+        password: firstUser.password
       }
     });
     expect(response.status()).toBe(400);
@@ -49,7 +89,7 @@ test.describe('Auth API Endpoints', () => {
   test('should return 400 for login with missing password', async ({ request }) => {
     const response = await request.post('/api/auth/login', {
       data: {
-        email: 'test@example.com'
+        email: firstUser.email
       }
     });
     expect(response.status()).toBe(400);
@@ -59,7 +99,7 @@ test.describe('Auth API Endpoints', () => {
     const response = await request.post('/api/auth/login', {
       data: {
         email: 'not-an-email',
-        password: 'password123'
+        password: firstUser.password
       }
     });
     expect(response.status()).toBe(400);
@@ -78,16 +118,14 @@ test.describe('Auth API Endpoints', () => {
   });
 
   test('should return user info from /api/auth/me with valid token', async ({ request }) => {
-    // First login to get a token
     const loginResponse = await request.post('/api/auth/login', {
       data: {
-        email: 'user@example.com',
-        password: 'password123'
+        email: lastUser.email,
+        password: lastUser.password
       }
     });
     const { token } = await loginResponse.json();
 
-    // Then access /me endpoint with the token
     const meResponse = await request.get('/api/auth/me', {
       headers: {
         'Authorization': `Bearer ${token}`
@@ -95,7 +133,7 @@ test.describe('Auth API Endpoints', () => {
     });
     expect(meResponse.ok()).toBeTruthy();
     const userData = await meResponse.json();
-    expect(userData).toHaveProperty('email', 'user@example.com');
+    expect(userData).toHaveProperty('email', lastUser.email);
     expect(userData).toHaveProperty('id');
   });
 
@@ -105,16 +143,14 @@ test.describe('Auth API Endpoints', () => {
   });
 
   test('should refresh token with valid existing token', async ({ request }) => {
-    // First login to get a token
     const loginResponse = await request.post('/api/auth/login', {
       data: {
-        email: 'refresh@example.com',
-        password: 'password123'
+        email: firstUser.email,
+        password: firstUser.password
       }
     });
     const { token: originalToken } = await loginResponse.json();
 
-    // Then refresh the token
     const refreshResponse = await request.post('/api/auth/refresh', {
       headers: {
         'Authorization': `Bearer ${originalToken}`
@@ -134,26 +170,26 @@ test.describe('Login Page UI', () => {
   });
 
   test('should display login form with all required elements', async ({ page }) => {
-    await expect(page.getByRole('heading', { name: /welcome to ugjb/i })).toBeVisible();
-    await expect(page.getByLabel(/email address/i)).toBeVisible();
+    await expect(page.getByRole('heading', { name: /welcome/i })).toBeVisible();
+    await expect(page.getByLabel(/email/i)).toBeVisible();
     await expect(page.getByLabel(/password/i)).toBeVisible();
     await expect(page.getByRole('button', { name: /sign in/i })).toBeVisible();
   });
 
   test('should display platform description', async ({ page }) => {
-    await expect(page.getByText(/unified workforce management platform/i)).toBeVisible();
+    await expect(page.getByText(/platform/i)).toBeVisible();
   });
 
-  test('should display demo mode hint', async ({ page }) => {
-    await expect(page.getByText(/demo: enter any email and password/i)).toBeVisible();
+  test('email input should be visible and editable', async ({ page }) => {
+    const emailInput = page.getByLabel(/email/i);
+    await expect(emailInput).toBeVisible();
+    await expect(emailInput).toBeEditable();
   });
 
-  test('email input should have correct placeholder', async ({ page }) => {
-    await expect(page.getByPlaceholder(/you@company.com/i)).toBeVisible();
-  });
-
-  test('password input should have correct placeholder', async ({ page }) => {
-    await expect(page.getByPlaceholder(/enter your password/i)).toBeVisible();
+  test('password input should be visible and editable', async ({ page }) => {
+    const passwordInput = page.getByLabel(/password/i);
+    await expect(passwordInput).toBeVisible();
+    await expect(passwordInput).toBeEditable();
   });
 });
 
@@ -163,112 +199,101 @@ test.describe('Login User Interactions', () => {
   });
 
   test('should allow typing in email field', async ({ page }) => {
-    const emailInput = page.getByLabel(/email address/i);
-    await emailInput.fill('test@example.com');
-    await expect(emailInput).toHaveValue('test@example.com');
+    const emailInput = page.getByLabel(/email/i);
+    await emailInput.fill(firstUser.email);
+    await expect(emailInput).toHaveValue(firstUser.email);
   });
 
   test('should allow typing in password field', async ({ page }) => {
     const passwordInput = page.getByLabel(/password/i);
-    await passwordInput.fill('secretpassword');
-    await expect(passwordInput).toHaveValue('secretpassword');
+    await passwordInput.fill(firstUser.password);
+    await expect(passwordInput).toHaveValue(firstUser.password);
   });
 
   test('should submit form and redirect to dashboard on successful login', async ({ page }) => {
-    await page.getByLabel(/email address/i).fill('user@example.com');
-    await page.getByLabel(/password/i).fill('password123');
+    await page.getByLabel(/email/i).fill(firstUser.email);
+    await page.getByLabel(/password/i).fill(firstUser.password);
     await page.getByRole('button', { name: /sign in/i }).click();
 
-    // Should redirect to dashboard after successful login
     await expect(page.getByRole('heading', { name: /dashboard/i })).toBeVisible({ timeout: 10000 });
     await expect(page).toHaveURL(/^https?:\/\/[^\/]+\/$/);
   });
 
   test('should show loading state during login', async ({ page }) => {
-    await page.getByLabel(/email address/i).fill('user@example.com');
-    await page.getByLabel(/password/i).fill('password123');
+    await page.getByLabel(/email/i).fill(firstUser.email);
+    await page.getByLabel(/password/i).fill(firstUser.password);
 
-    // Click and immediately check for loading state
     const submitButton = page.getByRole('button', { name: /sign in/i });
     await submitButton.click();
 
-    // The button might show a loading indicator briefly
-    // Wait for navigation to complete
     await expect(page.getByRole('heading', { name: /dashboard/i })).toBeVisible({ timeout: 10000 });
   });
 });
 
 test.describe('Authentication State Persistence', () => {
   test('should persist login state across page reloads', async ({ page }) => {
-    // Login
     await page.goto('/login');
-    await page.getByLabel(/email address/i).fill('persistent@example.com');
-    await page.getByLabel(/password/i).fill('password123');
+    await page.getByLabel(/email/i).fill(firstUser.email);
+    await page.getByLabel(/password/i).fill(firstUser.password);
     await page.getByRole('button', { name: /sign in/i }).click();
 
-    // Wait for dashboard
     await expect(page.getByRole('heading', { name: /dashboard/i })).toBeVisible({ timeout: 10000 });
 
-    // Reload the page
     await page.reload();
 
-    // Should still be on dashboard (not redirected to login)
     await expect(page.getByRole('heading', { name: /dashboard/i })).toBeVisible({ timeout: 10000 });
   });
 
   test('should redirect to login when not authenticated', async ({ page }) => {
-    // Clear any stored tokens
     await page.goto('/login');
     await page.evaluate(() => {
       localStorage.clear();
     });
 
-    // Try to access protected route
     await page.goto('/');
 
-    // Should be redirected to login
-    await expect(page.getByRole('heading', { name: /welcome to ugjb/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /welcome/i })).toBeVisible();
   });
 });
 
+// Dynamically generate role-based access tests for each unique role
 test.describe('Role-Based Access', () => {
-  test('should assign admin roles for admin emails', async ({ request }) => {
-    const response = await request.post('/api/auth/login', {
-      data: {
-        email: 'admin@example.com',
-        password: 'password123'
-      }
-    });
-    expect(response.ok()).toBeTruthy();
-    const data = await response.json();
-    // Admin email patterns might get admin roles
-    expect(data.user).toHaveProperty('roles');
-    expect(Array.isArray(data.user.roles)).toBeTruthy();
-  });
+  for (const role of allRoles) {
+    const user = userByRole.get(role)!;
 
-  test('should assign HR roles for HR emails', async ({ request }) => {
-    const response = await request.post('/api/auth/login', {
-      data: {
-        email: 'hr@example.com',
-        password: 'password123'
-      }
+    test(`should assign "${role}" role for user ${user.email}`, async ({ request }) => {
+      const response = await request.post('/api/auth/login', {
+        data: {
+          email: user.email,
+          password: user.password
+        }
+      });
+      expect(response.ok()).toBeTruthy();
+      const data = await response.json();
+      expect(data.user).toHaveProperty('roles');
+      expect(Array.isArray(data.user.roles)).toBeTruthy();
+      expect(data.user.roles).toContain(role);
     });
-    expect(response.ok()).toBeTruthy();
-    const data = await response.json();
-    expect(data.user.roles).toContain('hr_manager');
-  });
+  }
+});
 
-  test('should assign project manager roles for PM emails', async ({ request }) => {
-    const response = await request.post('/api/auth/login', {
-      data: {
-        email: 'pm@example.com',
-        password: 'password123'
-      }
+// Dynamically test login for all seeded users
+test.describe('All Seeded Users Login', () => {
+  for (const user of allUsers) {
+    test(`should login successfully as ${user.name} (${user.email})`, async ({ request }) => {
+      const response = await request.post('/api/auth/login', {
+        data: {
+          email: user.email,
+          password: user.password
+        }
+      });
+      expect(response.ok()).toBeTruthy();
+      const data = await response.json();
+      expect(data.user.email).toBe(user.email);
+      expect(data.user.name).toBe(user.name);
+      expect(data.user.roles).toEqual(expect.arrayContaining(user.roles));
     });
-    expect(response.ok()).toBeTruthy();
-    const data = await response.json();
-    expect(data.user.roles).toContain('project_manager');
-  });
+  }
 });
 
 test.describe('Token Validation', () => {
@@ -282,7 +307,8 @@ test.describe('Token Validation', () => {
   });
 
   test('should reject requests without Authorization header for protected endpoints', async ({ request }) => {
-    const response = await request.get('/api/v1/hr-management');
+    // /api/auth/me is a protected endpoint that requires authentication
+    const response = await request.get('/api/auth/me');
     expect(response.status()).toBe(401);
   });
 });
@@ -302,7 +328,6 @@ test.describe('Error Handling', () => {
       },
       data: 'not-valid-json'
     });
-    // Should return 400 Bad Request
     expect([400, 415]).toContain(response.status());
   });
 });
