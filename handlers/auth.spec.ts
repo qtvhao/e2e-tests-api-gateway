@@ -311,6 +311,287 @@ test.describe('Token Validation', () => {
     const response = await request.get('/api/auth/me');
     expect(response.status()).toBe(401);
   });
+
+  test('should reject expired or tampered token', async ({ request }) => {
+    // A properly formatted but invalid JWT (wrong signature)
+    const tamperedToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c';
+    const response = await request.get('/api/auth/me', {
+      headers: {
+        'Authorization': `Bearer ${tamperedToken}`
+      }
+    });
+    expect(response.status()).toBe(401);
+  });
+
+  test('should reject token with wrong Bearer prefix', async ({ request }) => {
+    const loginResponse = await request.post('/api/auth/login', {
+      data: {
+        email: firstUser.email,
+        password: firstUser.password
+      }
+    });
+    const { token } = await loginResponse.json();
+
+    // Use wrong prefix
+    const response = await request.get('/api/auth/me', {
+      headers: {
+        'Authorization': `Basic ${token}`
+      }
+    });
+    expect(response.status()).toBe(401);
+  });
+});
+
+// Helper to decode JWT payload (without verification - just for testing claims)
+function decodeJwtPayload(token: string): any {
+  const parts = token.split('.');
+  if (parts.length !== 3) {
+    throw new Error('Invalid JWT format');
+  }
+  const payload = Buffer.from(parts[1], 'base64url').toString('utf-8');
+  return JSON.parse(payload);
+}
+
+// Helper to decode JWT header
+function decodeJwtHeader(token: string): any {
+  const parts = token.split('.');
+  if (parts.length !== 3) {
+    throw new Error('Invalid JWT format');
+  }
+  const header = Buffer.from(parts[0], 'base64url').toString('utf-8');
+  return JSON.parse(header);
+}
+
+test.describe('JWT Token Structure Verification', () => {
+  test('should return valid JWT format (header.payload.signature)', async ({ request }) => {
+    const loginResponse = await request.post('/api/auth/login', {
+      data: { email: firstUser.email, password: firstUser.password }
+    });
+    const { token } = await loginResponse.json();
+
+    // JWT must have 3 parts separated by dots
+    const parts = token.split('.');
+    expect(parts.length).toBe(3);
+
+    // Each part must be non-empty
+    expect(parts[0].length).toBeGreaterThan(0); // header
+    expect(parts[1].length).toBeGreaterThan(0); // payload
+    expect(parts[2].length).toBeGreaterThan(0); // signature
+  });
+
+  test('should have valid JWT header with algorithm', async ({ request }) => {
+    const loginResponse = await request.post('/api/auth/login', {
+      data: { email: firstUser.email, password: firstUser.password }
+    });
+    const { token } = await loginResponse.json();
+
+    const header = decodeJwtHeader(token);
+
+    // Header must have typ and alg
+    expect(header).toHaveProperty('typ', 'JWT');
+    expect(header).toHaveProperty('alg');
+    // Algorithm should be HS256, HS384, HS512, RS256, etc.
+    expect(['HS256', 'HS384', 'HS512', 'RS256', 'RS384', 'RS512', 'ES256', 'ES384', 'ES512']).toContain(header.alg);
+  });
+
+  test('should have required JWT claims in payload', async ({ request }) => {
+    const loginResponse = await request.post('/api/auth/login', {
+      data: { email: firstUser.email, password: firstUser.password }
+    });
+    const { token } = await loginResponse.json();
+
+    const payload = decodeJwtPayload(token);
+
+    // Standard JWT claims
+    expect(payload).toHaveProperty('exp'); // expiration time
+    expect(payload).toHaveProperty('iat'); // issued at
+    expect(typeof payload.exp).toBe('number');
+    expect(typeof payload.iat).toBe('number');
+
+    // exp must be in the future
+    const now = Math.floor(Date.now() / 1000);
+    expect(payload.exp).toBeGreaterThan(now);
+
+    // iat must be in the past or now
+    expect(payload.iat).toBeLessThanOrEqual(now + 5); // 5 second tolerance
+  });
+
+  test('should include user data in JWT payload', async ({ request }) => {
+    const loginResponse = await request.post('/api/auth/login', {
+      data: { email: firstUser.email, password: firstUser.password }
+    });
+    const { token } = await loginResponse.json();
+
+    const payload = decodeJwtPayload(token);
+
+    // User-specific claims
+    expect(payload.email || payload.sub).toBeTruthy();
+    expect(payload.user_id || payload.sub || payload.id).toBeTruthy();
+  });
+
+  test('should include correct roles in JWT payload', async ({ request }) => {
+    for (const user of allUsers) {
+      const loginResponse = await request.post('/api/auth/login', {
+        data: { email: user.email, password: user.password }
+      });
+      const { token } = await loginResponse.json();
+
+      const payload = decodeJwtPayload(token);
+
+      // Roles should be in the payload
+      expect(payload.roles).toBeDefined();
+      expect(Array.isArray(payload.roles)).toBeTruthy();
+
+      // All user roles should be present
+      for (const role of user.roles) {
+        expect(payload.roles).toContain(role);
+      }
+    }
+  });
+
+  test('should have different tokens for different users', async ({ request }) => {
+    const tokens: string[] = [];
+
+    for (const user of allUsers) {
+      const loginResponse = await request.post('/api/auth/login', {
+        data: { email: user.email, password: user.password }
+      });
+      const { token } = await loginResponse.json();
+      tokens.push(token);
+
+      // Verify payload contains correct user
+      const payload = decodeJwtPayload(token);
+      expect(payload.email).toBe(user.email);
+    }
+
+    // All tokens should be unique
+    const uniqueTokens = new Set(tokens);
+    expect(uniqueTokens.size).toBe(allUsers.length);
+  });
+
+  test('should have valid expiration time (not too short, not too long)', async ({ request }) => {
+    const loginResponse = await request.post('/api/auth/login', {
+      data: { email: firstUser.email, password: firstUser.password }
+    });
+    const { token } = await loginResponse.json();
+
+    const payload = decodeJwtPayload(token);
+    const now = Math.floor(Date.now() / 1000);
+    const expiresIn = payload.exp - now;
+
+    // Token should expire in at least 1 minute
+    expect(expiresIn).toBeGreaterThan(60);
+
+    // Token should expire in at most 30 days
+    expect(expiresIn).toBeLessThan(30 * 24 * 60 * 60);
+  });
+});
+
+test.describe('JWT Token Functional Verification', () => {
+  test('should access protected endpoint with valid token', async ({ request }) => {
+    const loginResponse = await request.post('/api/auth/login', {
+      data: { email: firstUser.email, password: firstUser.password }
+    });
+    const { token } = await loginResponse.json();
+
+    // Verify token structure first
+    const payload = decodeJwtPayload(token);
+    expect(payload.email).toBe(firstUser.email);
+
+    // Then verify it works for API access
+    const protectedResponse = await request.get('/api/auth/me', {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    expect(protectedResponse.ok()).toBeTruthy();
+
+    const userData = await protectedResponse.json();
+    expect(userData.email).toBe(firstUser.email);
+    expect(userData.email).toBe(payload.email);
+  });
+
+  test('should reject token with modified payload', async ({ request }) => {
+    const loginResponse = await request.post('/api/auth/login', {
+      data: { email: firstUser.email, password: firstUser.password }
+    });
+    const { token } = await loginResponse.json();
+
+    // Modify the payload part of the token
+    const parts = token.split('.');
+    const payload = decodeJwtPayload(token);
+    payload.email = 'hacker@evil.com'; // Try to change email
+    const modifiedPayload = Buffer.from(JSON.stringify(payload)).toString('base64url');
+    const modifiedToken = `${parts[0]}.${modifiedPayload}.${parts[2]}`;
+
+    // Server should reject the modified token
+    const response = await request.get('/api/auth/me', {
+      headers: { 'Authorization': `Bearer ${modifiedToken}` }
+    });
+    expect(response.status()).toBe(401);
+  });
+
+  test('should reject token with modified signature', async ({ request }) => {
+    const loginResponse = await request.post('/api/auth/login', {
+      data: { email: firstUser.email, password: firstUser.password }
+    });
+    const { token } = await loginResponse.json();
+
+    // Modify the signature part
+    const parts = token.split('.');
+    const modifiedSignature = parts[2].split('').reverse().join('');
+    const modifiedToken = `${parts[0]}.${parts[1]}.${modifiedSignature}`;
+
+    const response = await request.get('/api/auth/me', {
+      headers: { 'Authorization': `Bearer ${modifiedToken}` }
+    });
+    expect(response.status()).toBe(401);
+  });
+
+  test('should refresh token and verify new token structure', async ({ request }) => {
+    const loginResponse = await request.post('/api/auth/login', {
+      data: { email: firstUser.email, password: firstUser.password }
+    });
+    const { token: originalToken } = await loginResponse.json();
+    const originalPayload = decodeJwtPayload(originalToken);
+
+    const refreshResponse = await request.post('/api/auth/refresh', {
+      headers: { 'Authorization': `Bearer ${originalToken}` }
+    });
+    expect(refreshResponse.ok()).toBeTruthy();
+
+    const { token: newToken } = await refreshResponse.json();
+    const newPayload = decodeJwtPayload(newToken);
+
+    // User data should be the same
+    expect(newPayload.email).toBe(originalPayload.email);
+    expect(newPayload.user_id || newPayload.sub).toBe(originalPayload.user_id || originalPayload.sub);
+
+    // New token should work
+    const meResponse = await request.get('/api/auth/me', {
+      headers: { 'Authorization': `Bearer ${newToken}` }
+    });
+    expect(meResponse.ok()).toBeTruthy();
+  });
+
+  test('should not access protected endpoints with token from wrong signature key', async ({ request }) => {
+    // Create a fake token with wrong signature (using a different secret)
+    const fakePayload = {
+      user_id: firstUser.id,
+      email: firstUser.email,
+      roles: firstUser.roles,
+      exp: Math.floor(Date.now() / 1000) + 3600,
+      iat: Math.floor(Date.now() / 1000)
+    };
+
+    const header = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64url');
+    const payload = Buffer.from(JSON.stringify(fakePayload)).toString('base64url');
+    const fakeSignature = 'fake_signature_with_wrong_key';
+    const fakeToken = `${header}.${payload}.${fakeSignature}`;
+
+    const response = await request.get('/api/auth/me', {
+      headers: { 'Authorization': `Bearer ${fakeToken}` }
+    });
+    expect(response.status()).toBe(401);
+  });
 });
 
 test.describe('Error Handling', () => {
