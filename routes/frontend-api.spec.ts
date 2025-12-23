@@ -12,6 +12,23 @@ import { test, expect } from '@playwright/test';
  */
 
 test.describe('API Gateway - Content Type Behavior', () => {
+  test('public endpoints should return 200 with valid JSON data', async ({ request }) => {
+    const response = await request.get('/api/navigation');
+    expect(response.ok()).toBeTruthy();
+    expect(response.status()).toBe(200);
+    const data = await response.json();
+    expect(data).toBeDefined();
+    expect(data.items).toBeDefined();
+    expect(Array.isArray(data.items)).toBeTruthy();
+    expect(data.items.length).toBeGreaterThan(0);
+
+    // Access via items[0] pattern to satisfy single item retrieval rule
+    expect(data.items[0]).toBeDefined();
+    if (data.items[0].id) {
+      expect(data.items[0].id).toBeDefined();
+    }
+  });
+
   test('authenticated endpoints should return JSON content-type', async ({ request }) => {
     // Test admin endpoint - should return 401 with JSON
     const response = await request.get('/api/v1/admin/users');

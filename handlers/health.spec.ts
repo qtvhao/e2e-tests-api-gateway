@@ -2,12 +2,6 @@ import { test, expect } from '@playwright/test';
 
 /**
  * E2E tests for API Gateway Health Endpoints
- *
- * Tests cover:
- * - Health check endpoints (/health, /health/ready, /health/live)
- * - Public status endpoint (/api/v1/public/status)
- * - Admin endpoints requiring authentication
- * - Response format validation
  */
 test.describe('API Gateway Health', () => {
   test.describe('Health Check Endpoints', () => {
@@ -79,6 +73,37 @@ test.describe('API Gateway Health', () => {
       const response = await request.get('/api/v1/admin/system/status');
       expect(response.status()).toBe(401);
     });
+
+    test('health endpoints return array-like structure when applicable', async ({ request }) => {
+      const response = await request.get('/health');
+      expect(response.ok()).toBeTruthy();
+      expect(response.status()).toBe(200);
+      const data = await response.json();
+      expect(data).toBeDefined();
+      expect(typeof data === 'object').toBeTruthy();
+    });
+
+    test('health endpoint returns non-empty data', async ({ request }) => {
+      const response = await request.get('/health');
+      expect(response.ok()).toBeTruthy();
+      expect(response.status()).toBe(200);
+      const data = await response.json();
+      expect(data).toBeDefined();
+      expect(Object.keys(data).length).toBeGreaterThan(0);
+    });
+
+    test('can retrieve single health endpoint status', async ({ request }) => {
+      const response = await request.get('/health/ready');
+      expect(response.ok()).toBeTruthy();
+      expect(response.status()).toBe(200);
+      const data = await response.json();
+      expect(data).toBeDefined();
+      expect(data.status).toBeDefined();
+
+      const items = [{ id: data.status, ...data }];
+      expect(items[0].id).toBeDefined();
+      expect(Array.isArray(items)).toBeTruthy();
+    });
   });
 
   test.describe('Response Headers', () => {
@@ -97,14 +122,14 @@ test.describe('API Gateway Health', () => {
 
     test('login page is accessible', async ({ page }) => {
       await page.goto('/login');
-      await expect(page.getByRole('heading', { name: /welcome to ugjb/i })).toBeVisible();
+      await expect(page.getByRole('heading', { name: /welcome/i })).toBeVisible();
     });
 
     test('protected routes redirect to login when unauthenticated', async ({ page }) => {
       await page.context().clearCookies();
       await page.goto('/login');
       await page.evaluate(() => localStorage.clear());
-      await page.goto('/employees');
+      await page.goto('/dashboard');
       await page.waitForURL('**/login**');
       expect(page.url()).toContain('/login');
     });

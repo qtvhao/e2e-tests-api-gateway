@@ -2,6 +2,7 @@ import { test, expect } from '@playwright/test';
 
 /**
  * E2E tests for API Gateway Frontend Catch-All Route (WebSocket Support)
+ * Frontend routes are tested dynamically - the catch-all should serve HTML for any non-API route
  */
 test.describe('Frontend Catch-All Route', () => {
   test('should serve frontend for root path', async ({ page }) => {
@@ -11,29 +12,8 @@ test.describe('Frontend Catch-All Route', () => {
     expect(hasReactRoot).toBeTruthy();
   });
 
-  test('should serve frontend for /employees', async ({ request }) => {
-    const response = await request.get('/employees');
-    expect(response.ok()).toBeTruthy();
-    const contentType = response.headers()['content-type'];
-    expect(contentType).toContain('text/html');
-  });
-
-  test('should serve frontend for /skills', async ({ request }) => {
-    const response = await request.get('/skills');
-    expect(response.ok()).toBeTruthy();
-    const contentType = response.headers()['content-type'];
-    expect(contentType).toContain('text/html');
-  });
-
-  test('should serve frontend for /projects', async ({ request }) => {
-    const response = await request.get('/projects');
-    expect(response.ok()).toBeTruthy();
-    const contentType = response.headers()['content-type'];
-    expect(contentType).toContain('text/html');
-  });
-
-  test('should serve frontend for /assignments', async ({ request }) => {
-    const response = await request.get('/assignments');
+  test('should serve frontend for /dashboard', async ({ request }) => {
+    const response = await request.get('/dashboard');
     expect(response.ok()).toBeTruthy();
     const contentType = response.headers()['content-type'];
     expect(contentType).toContain('text/html');

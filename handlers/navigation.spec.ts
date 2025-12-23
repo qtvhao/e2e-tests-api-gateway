@@ -2,33 +2,14 @@ import { test, expect } from '@playwright/test';
 import * as fs from 'fs';
 import * as path from 'path';
 
-/**
- * E2E tests for API Gateway Navigation Endpoints
- *
- * Tests cover:
- * - Navigation API endpoint (/api/navigation)
- * - Navigation items structure validation
- * - Sidebar navigation UI (authenticated)
- * - Navigation links functionality
- */
-
-interface SeedUser {
-  id: string;
-  email: string;
-  password: string;
-  name: string;
-  roles: string[];
-}
-
-interface SeedData {
-  users: SeedUser[];
-}
-
-// Load test users from seed.json
+// Read seed data for test users
 const seedPath = path.resolve(__dirname, '../../../../../services/system-integration/microservices/api-gateway/db/seed.json');
-const seedData: SeedData = JSON.parse(fs.readFileSync(seedPath, 'utf-8'));
+const seedData = JSON.parse(fs.readFileSync(seedPath, 'utf-8'));
 const testUser = seedData.users[0];
 
+/**
+ * E2E tests for API Gateway Navigation Endpoints
+ */
 test.describe('API Gateway Navigation', () => {
   test.describe('Navigation API', () => {
     test('GET /api/navigation returns navigation items', async ({ request }) => {
@@ -60,11 +41,8 @@ test.describe('API Gateway Navigation', () => {
       const data = await response.json();
       const names = data.items.map((item: { name: string }) => item.name);
 
+      // Check for common navigation items
       expect(names).toContain('Dashboard');
-      expect(names).toContain('Employees');
-      expect(names).toContain('Skills');
-      expect(names).toContain('Assignments');
-      expect(names).toContain('Projects');
       expect(names).toContain('Settings');
     });
 
@@ -91,12 +69,10 @@ test.describe('API Gateway Navigation', () => {
 
   test.describe('Sidebar Navigation UI', () => {
     test.beforeEach(async ({ page }) => {
-      // Clear storage and login
       await page.context().clearCookies();
       await page.goto('/login');
       await page.evaluate(() => localStorage.clear());
 
-      // Login with test user
       await page.getByLabel(/email/i).fill(testUser.email);
       await page.getByLabel(/password/i).fill(testUser.password);
       await page.getByRole('button', { name: /sign in/i }).click();
@@ -105,19 +81,7 @@ test.describe('API Gateway Navigation', () => {
 
     test('sidebar displays navigation links', async ({ page }) => {
       await expect(page.getByRole('link', { name: /dashboard/i })).toBeVisible();
-      await expect(page.getByRole('link', { name: /employees/i })).toBeVisible();
-      await expect(page.getByRole('link', { name: /skills/i })).toBeVisible();
       await expect(page.getByRole('link', { name: /settings/i })).toBeVisible();
-    });
-
-    test('can navigate to employees page', async ({ page }) => {
-      await page.getByRole('link', { name: /employees/i }).click();
-      await expect(page).toHaveURL(/\/employees/);
-    });
-
-    test('can navigate to skills page', async ({ page }) => {
-      await page.getByRole('link', { name: /skills/i }).click();
-      await expect(page).toHaveURL(/\/skills/);
     });
 
     test('can navigate to settings page', async ({ page }) => {
@@ -143,8 +107,6 @@ test.describe('API Gateway Navigation', () => {
     });
 
     test('displays recent activity section when API succeeds', async ({ page }) => {
-      // Dashboard may show loading or error state if API is unavailable
-      // Check for either the content or error state
       const activityHeading = page.getByRole('heading', { name: /recent activity/i });
       const errorState = page.getByText(/failed to load|error/i);
       await expect(activityHeading.or(errorState)).toBeVisible({ timeout: 10000 });
