@@ -129,7 +129,8 @@ test.describe('API Gateway Health', () => {
       await page.context().clearCookies();
       await page.goto('/login');
       await page.evaluate(() => localStorage.clear());
-      await page.goto('/dashboard');
+      // Dashboard is at root path '/', not '/dashboard'
+      await page.goto('/');
       await page.waitForURL('**/login**');
       expect(page.url()).toContain('/login');
     });

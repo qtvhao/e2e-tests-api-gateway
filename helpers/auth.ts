@@ -1,9 +1,25 @@
-import { Page } from '@playwright/test';
+import { Page, APIRequestContext } from '@playwright/test';
 
 /**
  * Authentication helper functions for E2E tests
  * Credentials are defined in: services/system-integration/microservices/api-gateway/db/seed.json
  */
+
+// Seed credentials
+export const ADMIN_CREDENTIALS = {
+  email: 'admin@ugjb.com',
+  password: 'Admin@123!'
+};
+
+export const USER_CREDENTIALS = {
+  email: 'user@ugjb.com',
+  password: 'User@123!'
+};
+
+export const TEST_USER_CREDENTIALS = {
+  email: 'test@ugjb.com',
+  password: 'Test@123!'
+};
 
 /**
  * Performs login with admin credentials
@@ -73,4 +89,46 @@ export async function loginAs(page: Page, email: string, password: string): Prom
 export async function logout(page: Page): Promise<void> {
   await page.getByRole('button', { name: /logout|sign out/i }).click();
   await page.waitForURL('/login');
+}
+
+/**
+ * Gets authentication token using API (for API request context)
+ * @param request - Playwright APIRequestContext
+ * @param email - User email
+ * @param password - User password
+ * @returns Authentication token
+ */
+export async function getAuthToken(request: APIRequestContext, email: string, password: string): Promise<string> {
+  const response = await request.post('/api/auth/login', {
+    data: { email, password }
+  });
+
+  if (!response.ok()) {
+    throw new Error(`Failed to authenticate: ${response.status()} ${response.statusText()}`);
+  }
+
+  const data = await response.json();
+  if (!data.token) {
+    throw new Error('No token returned from auth endpoint');
+  }
+
+  return data.token;
+}
+
+/**
+ * Gets admin authentication token
+ * @param request - Playwright APIRequestContext
+ * @returns Authentication token
+ */
+export async function getAdminToken(request: APIRequestContext): Promise<string> {
+  return getAuthToken(request, ADMIN_CREDENTIALS.email, ADMIN_CREDENTIALS.password);
+}
+
+/**
+ * Gets user authentication token
+ * @param request - Playwright APIRequestContext
+ * @returns Authentication token
+ */
+export async function getUserToken(request: APIRequestContext): Promise<string> {
+  return getAuthToken(request, USER_CREDENTIALS.email, USER_CREDENTIALS.password);
 }
