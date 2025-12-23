@@ -12,8 +12,8 @@ import { Page } from '@playwright/test';
  */
 export async function loginAsAdmin(page: Page): Promise<void> {
   await page.goto('/login');
-  await page.getByPlaceholder(/email/i).fill('admin@ugjb.com');
-  await page.getByPlaceholder(/password/i).fill('Admin@123!');
+  await page.getByLabel(/email/i).fill('admin@ugjb.com');
+  await page.getByLabel(/password/i).fill('Admin@123!');
   await page.getByRole('button', { name: /sign in|log in/i }).click();
   await page.waitForURL('/');
 }
@@ -25,8 +25,8 @@ export async function loginAsAdmin(page: Page): Promise<void> {
  */
 export async function loginAsUser(page: Page): Promise<void> {
   await page.goto('/login');
-  await page.getByPlaceholder(/email/i).fill('user@ugjb.com');
-  await page.getByPlaceholder(/password/i).fill('User@123!');
+  await page.getByLabel(/email/i).fill('user@ugjb.com');
+  await page.getByLabel(/password/i).fill('User@123!');
   await page.getByRole('button', { name: /sign in|log in/i }).click();
   await page.waitForURL('/');
 }
@@ -38,8 +38,8 @@ export async function loginAsUser(page: Page): Promise<void> {
  */
 export async function loginAsTestUser(page: Page): Promise<void> {
   await page.goto('/login');
-  await page.getByPlaceholder(/email/i).fill('test@ugjb.com');
-  await page.getByPlaceholder(/password/i).fill('Test@123!');
+  await page.getByLabel(/email/i).fill('test@ugjb.com');
+  await page.getByLabel(/password/i).fill('Test@123!');
   await page.getByRole('button', { name: /sign in|log in/i }).click();
   await page.waitForURL('/');
 }
@@ -60,8 +60,8 @@ export async function login(page: Page): Promise<void> {
  */
 export async function loginAs(page: Page, email: string, password: string): Promise<void> {
   await page.goto('/login');
-  await page.getByPlaceholder(/email/i).fill(email);
-  await page.getByPlaceholder(/password/i).fill(password);
+  await page.getByLabel(/email/i).fill(email);
+  await page.getByLabel(/password/i).fill(password);
   await page.getByRole('button', { name: /sign in|log in/i }).click();
   await page.waitForURL('/');
 }
