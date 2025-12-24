@@ -12,8 +12,8 @@ test.describe('Error Handling - Edge Cases', () => {
   });
 
   test('handles path with double slashes', async ({ request }) => {
-    const response = await request.get('//health');
-    expect(response.status()).toBeLessThan(500);
+    const response = await request.get('/health//');
+    expect([200, 301, 308]).toContain(response.status());
   });
 
   test('handles path with query parameters', async ({ request }) => {
