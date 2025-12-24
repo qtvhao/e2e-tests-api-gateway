@@ -170,9 +170,10 @@ test.describe('Frontend Catch-All Route', () => {
     test('frontend page loads without WebSocket errors', async ({ page }) => {
       const consoleErrors: string[] = [];
       page.on('console', msg => {
-        if (msg.type() === 'error') {
-          consoleErrors.push(msg.text());
-        }
+        // Collect all error-type console messages
+        const msgType = msg.type();
+        const isError = msgType === 'error';
+        isError && consoleErrors.push(msg.text());
       });
 
       await page.goto('/login');

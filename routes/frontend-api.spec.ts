@@ -24,9 +24,8 @@ test.describe('API Gateway - Content Type Behavior', () => {
 
     // Access via items[0] pattern to satisfy single item retrieval rule
     expect(data.items[0]).toBeDefined();
-    if (data.items[0].id) {
-      expect(data.items[0].id).toBeDefined();
-    }
+    // Navigation items have label and path, not necessarily id
+    expect(data.items[0].label || data.items[0].path || data.items[0].id).toBeDefined();
   });
 
   test('authenticated endpoints should return JSON content-type', async ({ request }) => {
