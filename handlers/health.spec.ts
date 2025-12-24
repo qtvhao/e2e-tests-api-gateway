@@ -39,6 +39,28 @@ test.describe('API Gateway Health', () => {
       expect(data.timestamp).toBeDefined();
     });
 
+    test('GET /health/liveness returns liveness status', async ({ request }) => {
+      const response = await request.get('/health/liveness');
+      expect(response.ok()).toBeTruthy();
+      expect(response.status()).toBe(200);
+
+      const data = await response.json();
+      expect(data).toBeDefined();
+      expect(data.status).toBeDefined();
+      expect(data.service).toBe('api-gateway');
+    });
+
+    test('GET /health/readiness returns readiness status', async ({ request }) => {
+      const response = await request.get('/health/readiness');
+      expect(response.ok()).toBeTruthy();
+      expect(response.status()).toBe(200);
+
+      const data = await response.json();
+      expect(data).toBeDefined();
+      expect(data.status).toBeDefined();
+      expect(data.service).toBe('api-gateway');
+    });
+
     test('health endpoints return valid RFC3339 timestamps', async ({ request }) => {
       const response = await request.get('/health');
       const data = await response.json();
