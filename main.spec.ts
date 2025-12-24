@@ -1,3 +1,21 @@
+/**
+ * @fileoverview E2E tests for API Gateway and Main Application
+ * @author Hao Nghiem <haonx@eupgroup.net>
+ *
+ * @changelog
+ * @version 0.0.4
+ * @changes Dynamic config loading, auth helper, new auth tests, explicit assertions
+ *
+ * @version 0.0.3
+ * @changes Fixed 404 test with role-based selector
+ *
+ * @version 0.0.2
+ * @changes Removed UI tests (login, dashboard, sidebar) to separate concerns
+ *
+ * @version 0.0.1
+ * @changes Initial creation with health, navigation, auth, UI, and error tests
+ */
+
 import { test, expect } from '@playwright/test';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -20,9 +38,6 @@ async function getAuthToken(request: any, email: string, password: string): Prom
   return data.token;
 }
 
-/**
- * E2E tests for API Gateway and Main Application
- */
 test.describe('API Gateway Health Endpoints', () => {
   test('should return healthy status from /health endpoint', async ({ request }) => {
     const response = await request.get('/health');
