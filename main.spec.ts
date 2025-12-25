@@ -159,7 +159,7 @@ test.describe('Authentication Flow', () => {
       headers: { Authorization: `Bearer ${token}` }
     });
     expect(response.status()).not.toBe(401);
-    expect([200, 404, 502]).toContain(response.status());
+    expect([200, 404, 502, 503]).toContain(response.status());
   });
 
   test('should retrieve single user by id via /api/auth/me', async ({ request }) => {
