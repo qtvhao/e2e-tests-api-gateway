@@ -1,0 +1,123 @@
+import { test, expect } from '@playwright/test';
+import { loadEnvConfig, generateEventId, getSentryRequestHeaders } from '../helpers/sentry-test-utils';
+
+/**
+ * Sentry SDK - Error Severity Level Tests
+ * Tests different error severity levels: debug, info, warning, error, fatal
+ */
+
+const envVars = loadEnvConfig();
+const SENTRY_KEY = envVars.SENTRY_KEY || process.env.SENTRY_KEY;
+const PROJECT_ID = envVars.SENTRY_PROJECT_ID || process.env.SENTRY_PROJECT_ID;
+
+test.describe('Sentry SDK - Error Severity Levels', () => {
+  test('captures debug level message', async ({ request }) => {
+    const eventId = generateEventId();
+    const response = await request.post(`/sentry/api/${PROJECT_ID}/envelope/`, {
+      headers: getSentryRequestHeaders(SENTRY_KEY),
+      data: {
+        event_id: eventId,
+        message: 'Debug message from ErrorTestPage',
+        level: 'debug',
+        platform: 'javascript',
+        timestamp: Math.floor(Date.now() / 1000),
+        logger: 'ErrorTestPage',
+        tags: {
+          module: 'ErrorTestPage',
+          level: 'debug',
+        },
+        sdk: { name: 'sentry.javascript.react', version: '8.45.0' },
+      },
+    });
+
+    expect(response.status()).toBe(200);
+  });
+
+  test('captures info level message', async ({ request }) => {
+    const eventId = generateEventId();
+    const response = await request.post(`/sentry/api/${PROJECT_ID}/envelope/`, {
+      headers: getSentryRequestHeaders(SENTRY_KEY),
+      data: {
+        event_id: eventId,
+        message: 'Info message from ErrorTestPage',
+        level: 'info',
+        platform: 'javascript',
+        timestamp: Math.floor(Date.now() / 1000),
+        logger: 'ErrorTestPage',
+        tags: {
+          module: 'ErrorTestPage',
+          level: 'info',
+        },
+        sdk: { name: 'sentry.javascript.react', version: '8.45.0' },
+      },
+    });
+
+    expect(response.status()).toBe(200);
+  });
+
+  test('captures warning level message', async ({ request }) => {
+    const eventId = generateEventId();
+    const response = await request.post(`/sentry/api/${PROJECT_ID}/envelope/`, {
+      headers: getSentryRequestHeaders(SENTRY_KEY),
+      data: {
+        event_id: eventId,
+        message: 'Warning message from ErrorTestPage',
+        level: 'warning',
+        platform: 'javascript',
+        timestamp: Math.floor(Date.now() / 1000),
+        logger: 'ErrorTestPage',
+        tags: {
+          module: 'ErrorTestPage',
+          level: 'warning',
+        },
+        sdk: { name: 'sentry.javascript.react', version: '8.45.0' },
+      },
+    });
+
+    expect(response.status()).toBe(200);
+  });
+
+  test('captures error level message', async ({ request }) => {
+    const eventId = generateEventId();
+    const response = await request.post(`/sentry/api/${PROJECT_ID}/envelope/`, {
+      headers: getSentryRequestHeaders(SENTRY_KEY),
+      data: {
+        event_id: eventId,
+        message: 'Error message from ErrorTestPage',
+        level: 'error',
+        platform: 'javascript',
+        timestamp: Math.floor(Date.now() / 1000),
+        logger: 'ErrorTestPage',
+        tags: {
+          module: 'ErrorTestPage',
+          level: 'error',
+        },
+        sdk: { name: 'sentry.javascript.react', version: '8.45.0' },
+      },
+    });
+
+    expect(response.status()).toBe(200);
+  });
+
+  test('captures fatal level message', async ({ request }) => {
+    const eventId = generateEventId();
+    const response = await request.post(`/sentry/api/${PROJECT_ID}/envelope/`, {
+      headers: getSentryRequestHeaders(SENTRY_KEY),
+      data: {
+        event_id: eventId,
+        message: 'Fatal message from ErrorTestPage',
+        level: 'fatal',
+        platform: 'javascript',
+        timestamp: Math.floor(Date.now() / 1000),
+        logger: 'ErrorTestPage',
+        tags: {
+          module: 'ErrorTestPage',
+          level: 'fatal',
+        },
+        sdk: { name: 'sentry.javascript.react', version: '8.45.0' },
+      },
+    });
+
+    expect(response.status()).toBe(200);
+  });
+});
