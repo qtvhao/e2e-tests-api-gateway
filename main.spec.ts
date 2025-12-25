@@ -1,6 +1,6 @@
 /**
  * @fileoverview E2E tests for API Gateway and Main Application
- * @author Hao Nghiem <haonx@eupgroup.net>
+ * @author Hao Nghiem <qtvhao@gmail.com>
  *
  * @changelog
  * @version 0.0.4

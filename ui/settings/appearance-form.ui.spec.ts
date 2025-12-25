@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { loginAsAdmin } from '../../helpers/auth';
 
+// Tests for AppearanceSettings component form submission
 test.describe('Appearance Settings Form', () => {
   test.beforeEach(async ({ page }) => {
     // Login first
