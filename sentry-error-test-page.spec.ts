@@ -1,4 +1,6 @@
 import { test, expect } from '@playwright/test';
+import * as fs from 'fs';
+import * as path from 'path';
 
 /**
  * E2E tests for Sentry SDK integration with ErrorTestPage
@@ -19,8 +21,23 @@ import { test, expect } from '@playwright/test';
 // Sentry configuration - loaded from e2e/.env
 // See: e2e/.env for SENTRY_KEY and SENTRY_PROJECT_ID values
 // Get DSN from: docker logs ugjb-v2-sentry-init-1
-const SENTRY_KEY = process.env.SENTRY_KEY;
-const PROJECT_ID = process.env.SENTRY_PROJECT_ID;
+
+// Load .env file
+const envPath = path.resolve(__dirname, '../../../.env');
+const envContent = fs.readFileSync(envPath, 'utf-8');
+const envVars: Record<string, string> = {};
+envContent.split('\n').forEach(line => {
+  const trimmed = line.trim();
+  if (trimmed && !trimmed.startsWith('#')) {
+    const [key, value] = trimmed.split('=');
+    if (key && value) {
+      envVars[key.trim()] = value.trim();
+    }
+  }
+});
+
+const SENTRY_KEY = envVars.SENTRY_KEY || process.env.SENTRY_KEY;
+const PROJECT_ID = envVars.SENTRY_PROJECT_ID || process.env.SENTRY_PROJECT_ID;
 
 const SENTRY_AUTH_HEADER = `Sentry sentry_key=${SENTRY_KEY},sentry_version=7,sentry_client=sentry.javascript.react/8.45.0`;
 
@@ -40,12 +57,16 @@ test.describe('Sentry SDK - ErrorTestPage Integration', () => {
   test.describe('Manual Error Capture', () => {
     test('captures manually triggered error with context', async ({ request }) => {
       const eventId = generateEventId();
-      const response = await request.post(`/sentry/api/${PROJECT_ID}/store/`, {
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Sentry-Auth': SENTRY_AUTH_HEADER,
-        },
-        data: {
+      const now = new Date().toISOString();
+
+      const envelope = [
+        JSON.stringify({
+          event_id: eventId,
+          sent_at: now,
+          dsn: `http://${SENTRY_KEY}@localhost:8080/sentry/${PROJECT_ID}`,
+        }),
+        JSON.stringify({ type: 'event', content_type: 'application/json' }),
+        JSON.stringify({
           event_id: eventId,
           message: 'Manually captured error for Sentry testing',
           level: 'error',
@@ -63,7 +84,15 @@ test.describe('Sentry SDK - ErrorTestPage Integration', () => {
             triggered_by: 'Capture Error Manually button',
           },
           sdk: { name: 'sentry.javascript.react', version: '8.45.0' },
+        }),
+      ].join('\n');
+
+      const response = await request.post(`/sentry/api/${PROJECT_ID}/envelope/`, {
+        headers: {
+          'Content-Type': 'application/x-sentry-envelope',
+          'X-Sentry-Auth': SENTRY_AUTH_HEADER,
         },
+        data: envelope,
       });
 
       expect(response.status()).toBe(200);
@@ -71,12 +100,16 @@ test.describe('Sentry SDK - ErrorTestPage Integration', () => {
 
     test('captures error with custom module and action tags', async ({ request }) => {
       const eventId = generateEventId();
-      const response = await request.post(`/sentry/api/${PROJECT_ID}/store/`, {
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Sentry-Auth': SENTRY_AUTH_HEADER,
-        },
-        data: {
+      const now = new Date().toISOString();
+
+      const envelope = [
+        JSON.stringify({
+          event_id: eventId,
+          sent_at: now,
+          dsn: `http://${SENTRY_KEY}@localhost:8080/sentry/${PROJECT_ID}`,
+        }),
+        JSON.stringify({ type: 'event', content_type: 'application/json' }),
+        JSON.stringify({
           event_id: eventId,
           message: 'Custom tagged error from ErrorTestPage',
           level: 'error',
@@ -90,7 +123,15 @@ test.describe('Sentry SDK - ErrorTestPage Integration', () => {
             environment: 'e2e-test',
           },
           sdk: { name: 'sentry.javascript.react', version: '8.45.0' },
+        }),
+      ].join('\n');
+
+      const response = await request.post(`/sentry/api/${PROJECT_ID}/envelope/`, {
+        headers: {
+          'Content-Type': 'application/x-sentry-envelope',
+          'X-Sentry-Auth': SENTRY_AUTH_HEADER,
         },
+        data: envelope,
       });
 
       expect(response.status()).toBe(200);
@@ -100,9 +141,9 @@ test.describe('Sentry SDK - ErrorTestPage Integration', () => {
   test.describe('Fatal Error Capture', () => {
     test('captures fatal error with correct severity level', async ({ request }) => {
       const eventId = generateEventId();
-      const response = await request.post(`/sentry/api/${PROJECT_ID}/store/`, {
+      const response = await request.post(`/sentry/api/${PROJECT_ID}/envelope/`, {
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/x-sentry-envelope',
           'X-Sentry-Auth': SENTRY_AUTH_HEADER,
         },
         data: {
@@ -131,9 +172,9 @@ test.describe('Sentry SDK - ErrorTestPage Integration', () => {
 
     test('captures fatal error with fingerprint for grouping', async ({ request }) => {
       const eventId = generateEventId();
-      const response = await request.post(`/sentry/api/${PROJECT_ID}/store/`, {
+      const response = await request.post(`/sentry/api/${PROJECT_ID}/envelope/`, {
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/x-sentry-envelope',
           'X-Sentry-Auth': SENTRY_AUTH_HEADER,
         },
         data: {
@@ -159,9 +200,9 @@ test.describe('Sentry SDK - ErrorTestPage Integration', () => {
   test.describe('React ErrorBoundary', () => {
     test('captures render error caught by ErrorBoundary', async ({ request }) => {
       const eventId = generateEventId();
-      const response = await request.post(`/sentry/api/${PROJECT_ID}/store/`, {
+      const response = await request.post(`/sentry/api/${PROJECT_ID}/envelope/`, {
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/x-sentry-envelope',
           'X-Sentry-Auth': SENTRY_AUTH_HEADER,
         },
         data: {
@@ -215,9 +256,9 @@ test.describe('Sentry SDK - ErrorTestPage Integration', () => {
 
     test('captures ErrorBoundary onError callback data', async ({ request }) => {
       const eventId = generateEventId();
-      const response = await request.post(`/sentry/api/${PROJECT_ID}/store/`, {
+      const response = await request.post(`/sentry/api/${PROJECT_ID}/envelope/`, {
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/x-sentry-envelope',
           'X-Sentry-Auth': SENTRY_AUTH_HEADER,
         },
         data: {
@@ -248,9 +289,9 @@ test.describe('Sentry SDK - ErrorTestPage Integration', () => {
   test.describe('TypeError / Runtime Exceptions', () => {
     test('captures TypeError from undefined property access', async ({ request }) => {
       const eventId = generateEventId();
-      const response = await request.post(`/sentry/api/${PROJECT_ID}/store/`, {
+      const response = await request.post(`/sentry/api/${PROJECT_ID}/envelope/`, {
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/x-sentry-envelope',
           'X-Sentry-Auth': SENTRY_AUTH_HEADER,
         },
         data: {
@@ -296,9 +337,9 @@ test.describe('Sentry SDK - ErrorTestPage Integration', () => {
 
     test('captures ReferenceError', async ({ request }) => {
       const eventId = generateEventId();
-      const response = await request.post(`/sentry/api/${PROJECT_ID}/store/`, {
+      const response = await request.post(`/sentry/api/${PROJECT_ID}/envelope/`, {
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/x-sentry-envelope',
           'X-Sentry-Auth': SENTRY_AUTH_HEADER,
         },
         data: {
@@ -343,9 +384,9 @@ test.describe('Sentry SDK - ErrorTestPage Integration', () => {
   test.describe('Async Errors', () => {
     test('captures uncaught async error from setTimeout', async ({ request }) => {
       const eventId = generateEventId();
-      const response = await request.post(`/sentry/api/${PROJECT_ID}/store/`, {
+      const response = await request.post(`/sentry/api/${PROJECT_ID}/envelope/`, {
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/x-sentry-envelope',
           'X-Sentry-Auth': SENTRY_AUTH_HEADER,
         },
         data: {
@@ -396,9 +437,9 @@ test.describe('Sentry SDK - ErrorTestPage Integration', () => {
 
     test('captures unhandled promise rejection', async ({ request }) => {
       const eventId = generateEventId();
-      const response = await request.post(`/sentry/api/${PROJECT_ID}/store/`, {
+      const response = await request.post(`/sentry/api/${PROJECT_ID}/envelope/`, {
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/x-sentry-envelope',
           'X-Sentry-Auth': SENTRY_AUTH_HEADER,
         },
         data: {
@@ -450,9 +491,9 @@ test.describe('Sentry SDK - ErrorTestPage Integration', () => {
   test.describe('API Error Tracking', () => {
     test('captures 404 API error', async ({ request }) => {
       const eventId = generateEventId();
-      const response = await request.post(`/sentry/api/${PROJECT_ID}/store/`, {
+      const response = await request.post(`/sentry/api/${PROJECT_ID}/envelope/`, {
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/x-sentry-envelope',
           'X-Sentry-Auth': SENTRY_AUTH_HEADER,
         },
         data: {
@@ -482,9 +523,9 @@ test.describe('Sentry SDK - ErrorTestPage Integration', () => {
 
     test('captures network failure error', async ({ request }) => {
       const eventId = generateEventId();
-      const response = await request.post(`/sentry/api/${PROJECT_ID}/store/`, {
+      const response = await request.post(`/sentry/api/${PROJECT_ID}/envelope/`, {
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/x-sentry-envelope',
           'X-Sentry-Auth': SENTRY_AUTH_HEADER,
         },
         data: {
@@ -617,9 +658,9 @@ test.describe('Sentry SDK - ErrorTestPage Integration', () => {
       const eventId = generateEventId();
       const now = Math.floor(Date.now() / 1000);
 
-      const response = await request.post(`/sentry/api/${PROJECT_ID}/store/`, {
+      const response = await request.post(`/sentry/api/${PROJECT_ID}/envelope/`, {
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/x-sentry-envelope',
           'X-Sentry-Auth': SENTRY_AUTH_HEADER,
         },
         data: {
@@ -667,9 +708,9 @@ test.describe('Sentry SDK - ErrorTestPage Integration', () => {
 
     test('captures error with device and browser context', async ({ request }) => {
       const eventId = generateEventId();
-      const response = await request.post(`/sentry/api/${PROJECT_ID}/store/`, {
+      const response = await request.post(`/sentry/api/${PROJECT_ID}/envelope/`, {
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/x-sentry-envelope',
           'X-Sentry-Auth': SENTRY_AUTH_HEADER,
         },
         data: {
@@ -706,9 +747,9 @@ test.describe('Sentry SDK - ErrorTestPage Integration', () => {
 
     test('captures error with user context', async ({ request }) => {
       const eventId = generateEventId();
-      const response = await request.post(`/sentry/api/${PROJECT_ID}/store/`, {
+      const response = await request.post(`/sentry/api/${PROJECT_ID}/envelope/`, {
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/x-sentry-envelope',
           'X-Sentry-Auth': SENTRY_AUTH_HEADER,
         },
         data: {
@@ -739,9 +780,9 @@ test.describe('Sentry SDK - ErrorTestPage Integration', () => {
   test.describe('Error Severity Levels', () => {
     test('captures debug level message', async ({ request }) => {
       const eventId = generateEventId();
-      const response = await request.post(`/sentry/api/${PROJECT_ID}/store/`, {
+      const response = await request.post(`/sentry/api/${PROJECT_ID}/envelope/`, {
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/x-sentry-envelope',
           'X-Sentry-Auth': SENTRY_AUTH_HEADER,
         },
         data: {
@@ -764,9 +805,9 @@ test.describe('Sentry SDK - ErrorTestPage Integration', () => {
 
     test('captures info level message', async ({ request }) => {
       const eventId = generateEventId();
-      const response = await request.post(`/sentry/api/${PROJECT_ID}/store/`, {
+      const response = await request.post(`/sentry/api/${PROJECT_ID}/envelope/`, {
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/x-sentry-envelope',
           'X-Sentry-Auth': SENTRY_AUTH_HEADER,
         },
         data: {
@@ -789,9 +830,9 @@ test.describe('Sentry SDK - ErrorTestPage Integration', () => {
 
     test('captures warning level message', async ({ request }) => {
       const eventId = generateEventId();
-      const response = await request.post(`/sentry/api/${PROJECT_ID}/store/`, {
+      const response = await request.post(`/sentry/api/${PROJECT_ID}/envelope/`, {
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/x-sentry-envelope',
           'X-Sentry-Auth': SENTRY_AUTH_HEADER,
         },
         data: {
@@ -814,9 +855,9 @@ test.describe('Sentry SDK - ErrorTestPage Integration', () => {
 
     test('captures error level message', async ({ request }) => {
       const eventId = generateEventId();
-      const response = await request.post(`/sentry/api/${PROJECT_ID}/store/`, {
+      const response = await request.post(`/sentry/api/${PROJECT_ID}/envelope/`, {
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/x-sentry-envelope',
           'X-Sentry-Auth': SENTRY_AUTH_HEADER,
         },
         data: {
@@ -839,9 +880,9 @@ test.describe('Sentry SDK - ErrorTestPage Integration', () => {
 
     test('captures fatal level message', async ({ request }) => {
       const eventId = generateEventId();
-      const response = await request.post(`/sentry/api/${PROJECT_ID}/store/`, {
+      const response = await request.post(`/sentry/api/${PROJECT_ID}/envelope/`, {
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/x-sentry-envelope',
           'X-Sentry-Auth': SENTRY_AUTH_HEADER,
         },
         data: {
