@@ -72,7 +72,7 @@ test.describe('Token Refresh - Authentication Requirements', () => {
     const response = await request.post('/api/auth/refresh', {
       headers: { Authorization: `Bearer ${token}` }
     });
-    expect([200, 201, 204, 404, 502]).toContain(response.status());
+    expect(response.status()).toBe(200);
   });
 
   test('auth/me returns user data with valid token', async ({ request }) => {

@@ -68,7 +68,7 @@ test.describe('Token Refresh - Data Validation', () => {
       headers: { Authorization: `Bearer ${token}` }
     });
 
-    expect([200, 403, 404, 502]).toContain(response.status());
+    expect(response.status()).toBe(200);
 
     const body = await response.text();
     expect(body).toBeDefined();

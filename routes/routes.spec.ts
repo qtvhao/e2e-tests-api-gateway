@@ -74,7 +74,7 @@ test.describe('Navigation Configuration', () => {
 test.describe('Public API Routes', () => {
   test('should allow access to /api/v1/public/status without auth', async ({ request }) => {
     const response = await request.get('/api/v1/public/status');
-    expect([200, 404, 502]).toContain(response.status());
+    expect(response.status()).toBe(200);
   });
 });
 
@@ -84,8 +84,7 @@ test.describe('Admin Routes', () => {
     const response = await request.get('/api/v1/admin/users', {
       headers: { Authorization: `Bearer ${token}` }
     });
-    expect(response.status()).not.toBe(401);
-    expect([200, 403, 404, 502]).toContain(response.status());
+    expect(response.status()).toBe(200);
   });
 
   test('should return valid data from admin endpoint', async ({ request }) => {

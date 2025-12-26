@@ -28,11 +28,11 @@ test.describe('API Gateway V1 Authentication', () => {
   test.describe('Authenticated Access', () => {
     test('protected routes work with valid token', async ({ request }) => {
       const token = await getAuthToken(request, adminUser.email, adminUser.password);
-      const response = await request.get(protectedEndpoints[0], {
+      // Use /api/auth/me endpoint which is always available and doesn't depend on service configuration
+      const response = await request.get('/api/auth/me', {
         headers: { Authorization: `Bearer ${token}` }
       });
-      expect(response.status()).not.toBe(401);
-      expect([200, 404, 502]).toContain(response.status());
+      expect(response.status()).toBe(200);
     });
 
     test('returns valid data from authenticated endpoint', async ({ request }) => {

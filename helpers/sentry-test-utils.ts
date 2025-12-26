@@ -11,10 +11,10 @@ import * as path from 'path';
  */
 
 /**
- * Load environment variables from e2e/.env file
+ * Load environment variables from root .env file
  */
 export function loadEnvConfig(): Record<string, string> {
-  const envPath = path.resolve(__dirname, '../../../.env');
+  const envPath = path.resolve(__dirname, '../../../../../.env');
   const envContent = fs.readFileSync(envPath, 'utf-8');
   const envVars: Record<string, string> = {};
 

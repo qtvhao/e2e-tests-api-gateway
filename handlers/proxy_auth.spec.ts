@@ -27,11 +27,11 @@ async function getAuthToken(request: any, email: string, password: string): Prom
 test.describe('API Gateway Proxy - Authentication Proxy', () => {
   test('should successfully authenticate and access protected endpoint', async ({ request }) => {
     const token = await getAuthToken(request, adminUser.email, adminUser.password);
-    const response = await request.get(protectedEndpoints[0], {
+    // Use /api/auth/me which is always available and requires authentication
+    const response = await request.get('/api/auth/me', {
       headers: { Authorization: `Bearer ${token}` }
     });
-    expect(response.status()).not.toBe(401);
-    expect([200, 404, 502]).toContain(response.status());
+    expect(response.status()).toBe(200);
   });
 
   test('should return valid data from authenticated endpoint', async ({ request }) => {

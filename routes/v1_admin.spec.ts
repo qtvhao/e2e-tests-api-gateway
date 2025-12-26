@@ -42,8 +42,7 @@ test.describe('API Gateway V1 Admin Routes', () => {
       const response = await request.get('/api/v1/admin/users', {
         headers: { Authorization: `Bearer ${token}` }
       });
-      expect([401, 403]).not.toContain(response.status());
-      expect([200, 404, 502]).toContain(response.status());
+      expect(response.status()).toBe(200);
     });
 
     test('admin endpoint returns valid data structure', async ({ request }) => {

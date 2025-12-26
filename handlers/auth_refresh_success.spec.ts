@@ -44,8 +44,7 @@ test.describe('Token Refresh - Successful Operations', () => {
       headers: { Authorization: `Bearer ${token}` }
     });
 
-    expect(response.status()).not.toBe(401);
-    expect([200, 201, 204, 404, 502]).toContain(response.status());
+    expect(response.status()).toBe(200);
   });
 
   test('refresh endpoint returns valid JSON response', async ({ request }) => {
@@ -54,8 +53,7 @@ test.describe('Token Refresh - Successful Operations', () => {
       headers: { Authorization: `Bearer ${token}` }
     });
 
-    expect(response.status()).toBeDefined();
-    expect([200, 201, 204, 404, 502]).toContain(response.status());
+    expect(response.status()).toBe(200);
 
     const body = await response.text();
     expect(body).toBeDefined();
@@ -70,8 +68,7 @@ test.describe('Token Refresh - Successful Operations', () => {
 
     expect(response).toBeDefined();
     const status = response.status();
-    expect(status).toBeDefined();
-    expect([200, 201, 204, 404, 502]).toContain(status);
+    expect(status).toBe(200);
 
     const body = await response.text();
     expect(typeof body).toBe('string');
@@ -88,7 +85,7 @@ test.describe('Token Refresh - Successful Operations', () => {
     expect(refreshResponse).toBeDefined();
 
     const refreshStatus = refreshResponse.status();
-    expect([200, 201, 204, 404, 502]).toContain(refreshStatus);
+    expect(refreshStatus).toBe(200);
 
     const body = await refreshResponse.text();
     expect(body).toBeDefined();
