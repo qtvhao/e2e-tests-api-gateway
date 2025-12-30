@@ -20,7 +20,7 @@
 
 import { test, expect, TEST_USERS } from '../fixtures/api-fixtures';
 import { loadTestConfig } from '../helpers/test-config';
-import { expectHealthy, expectSuccessResponse } from '../helpers/api-test-utils';
+import { expectValidApiResponse, expectSuccessResponse } from '../helpers/api-test-utils';
 
 test.describe('Login Form - API Tests', () => {
   const config = loadTestConfig();
@@ -31,9 +31,7 @@ test.describe('Login Form - API Tests', () => {
   test('API: Health check endpoint is available', async ({ request }) => {
     const response = await request.get(HEALTH_ENDPOINT);
     expect(response.status()).toBe(200);
-    expect(response.headers()['content-type']).toContain('application/json');
-    const body = await response.json();
-    expect(body.error?.message).not.toBe('API endpoint not found');
+    await expectValidApiResponse(response);
   });
 
   test('API: Login endpoint accepts POST requests', async ({ request }) => {
@@ -41,9 +39,7 @@ test.describe('Login Form - API Tests', () => {
       data: TEST_USERS.admin
     });
     // Expect successful login with valid credentials
-    expect(response.ok()).toBe(true);
-    const body = await response.json();
-    expect(body.error?.message).not.toBe('API endpoint not found');
+    await expectSuccessResponse(response);
   });
 
   test('API: Login response returns valid status', async ({ request }) => {
@@ -53,9 +49,7 @@ test.describe('Login Form - API Tests', () => {
 
     // Expect successful authentication with valid credentials
     expect(response.status()).toBe(200);
-    expect(response.headers()['content-type']).toContain('application/json');
-    const body = await response.json();
-    expect(body.error?.message).not.toBe('API endpoint not found');
+    await expectValidApiResponse(response);
   });
 
   test('API: Successful login includes token and user', async ({ request }) => {
@@ -64,9 +58,7 @@ test.describe('Login Form - API Tests', () => {
     });
 
     // Only test structure for successful responses
-    expect(response.ok()).toBe(true);
-    const body = await response.json();
-    expect(body.error?.message).not.toBe('API endpoint not found');
+    const body = await expectSuccessResponse(response);
     expect(body).toHaveProperty('token');
     expect(body).toHaveProperty('user');
   });

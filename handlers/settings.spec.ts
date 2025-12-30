@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { getAdminToken } from '../helpers/auth';
+import { expectValidApiResponse, expectSuccessResponse, expectUnauthorized } from '../helpers/api-test-utils';
 
 /**
  * E2E tests for Settings Handler
@@ -12,7 +13,7 @@ test.describe('Settings Handler', () => {
     test('should return healthy status', async ({ request }) => {
       const response = await request.get('/health');
       expect(response.status()).toBe(200);
-      const body = await response.json();
+      const body = await expectValidApiResponse(response);
       expect(body.status).toBeDefined();
       expect(body.status).toBe('healthy');
     });
@@ -24,9 +25,7 @@ test.describe('Settings Handler', () => {
       const response = await request.get('/api/v1/settings/notifications', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
-      expect(response.status()).toBe(200);
-      const body = await response.json();
-      expect(body.error?.message).not.toBe('API endpoint not found');
+      const body = await expectSuccessResponse(response);
       expect(body).toHaveProperty('items');
       expect(body).toHaveProperty('preferences');
       // Data defined check
@@ -35,18 +34,16 @@ test.describe('Settings Handler', () => {
       // Array type check
       expect(Array.isArray(body.items)).toBe(true);
       // Non-empty data validation
-      expect(body.items.length).toBeGreaterThanOrEqual(1);
+      expect((body.items as unknown[]).length).toBeGreaterThanOrEqual(1);
       // Data validation - check item structure
-      expect(body.items[0]).toHaveProperty('key');
-      expect(body.items[0]).toHaveProperty('label');
-      expect(body.items[0]).toHaveProperty('description');
+      expect((body.items as Record<string, unknown>[])[0]).toHaveProperty('key');
+      expect((body.items as Record<string, unknown>[])[0]).toHaveProperty('label');
+      expect((body.items as Record<string, unknown>[])[0]).toHaveProperty('description');
     });
 
     test('GET /api/v1/settings/notifications requires authentication', async ({ request }) => {
       const response = await request.get('/api/v1/settings/notifications');
-      expect(response.status()).toBe(401);
-      const body = await response.json();
-      expect(body.error?.message).not.toBe('API endpoint not found');
+      await expectUnauthorized(response);
     });
   });
 });
