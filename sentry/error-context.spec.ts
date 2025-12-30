@@ -1,3 +1,4 @@
+/* eslint-disable playwright-custom/no-unversioned-api -- Sentry/Bugsink uses its own API format /sentry/api/{project_id}/envelope/, not our versioned REST API */
 import { test, expect } from '@playwright/test';
 import { loadEnvConfig, generateEventId, getSentryRequestHeaders } from '../helpers/sentry-test-utils';
 
@@ -7,8 +8,8 @@ import { loadEnvConfig, generateEventId, getSentryRequestHeaders } from '../help
  */
 
 const envVars = loadEnvConfig();
-const SENTRY_KEY = envVars.SENTRY_KEY || process.env.SENTRY_KEY;
-const PROJECT_ID = envVars.SENTRY_PROJECT_ID || process.env.SENTRY_PROJECT_ID;
+const SENTRY_KEY = envVars.SENTRY_KEY;
+const PROJECT_ID = envVars.SENTRY_PROJECT_ID;
 
 test.describe('Sentry SDK - Error Context and Breadcrumbs', () => {
   test('captures error with user interaction breadcrumbs', async ({ request }) => {
@@ -115,7 +116,7 @@ test.describe('Sentry SDK - Error Context and Breadcrumbs', () => {
         tags: {
           module: 'ErrorTestPage',
           action: 'user_context_test',
-          authenticated: 'true',
+          is_logged_in: 'true',
         },
         sdk: { name: 'sentry.javascript.react', version: '8.45.0' },
       },

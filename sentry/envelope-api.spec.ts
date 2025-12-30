@@ -1,3 +1,4 @@
+/* eslint-disable playwright-custom/no-unversioned-api -- Sentry/Bugsink uses its own API format /sentry/api/{project_id}/envelope/, not our versioned REST API */
 import { test, expect } from '@playwright/test';
 import { loadEnvConfig, generateEventId, getSentryRequestHeaders, createEnvelope } from '../helpers/sentry-test-utils';
 
@@ -7,8 +8,8 @@ import { loadEnvConfig, generateEventId, getSentryRequestHeaders, createEnvelope
  */
 
 const envVars = loadEnvConfig();
-const SENTRY_KEY = envVars.SENTRY_KEY || process.env.SENTRY_KEY;
-const PROJECT_ID = envVars.SENTRY_PROJECT_ID || process.env.SENTRY_PROJECT_ID;
+const SENTRY_KEY = envVars.SENTRY_KEY;
+const PROJECT_ID = envVars.SENTRY_PROJECT_ID;
 
 test.describe('Sentry SDK - Envelope API - ErrorTestPage Events', () => {
   test('captures error via envelope endpoint', async ({ request }) => {

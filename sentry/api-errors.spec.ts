@@ -1,3 +1,5 @@
+/* eslint-disable playwright-custom/no-unversioned-api -- Sentry/Bugsink uses its own API format /sentry/api/{project_id}/envelope/, not our versioned REST API. Also, /api/non-existent-endpoint is intentionally unversioned for error testing. */
+/* eslint-disable playwright-custom/no-process-env-in-spec -- Fallback to process.env for environments without .env file */
 import { test, expect } from '@playwright/test';
 import { loadEnvConfig, generateEventId, getSentryRequestHeaders } from '../helpers/sentry-test-utils';
 

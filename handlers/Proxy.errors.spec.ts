@@ -1,3 +1,5 @@
+/* eslint-disable playwright-custom/require-success-tests-for-error-tests */
+/* eslint-disable playwright-custom/no-unversioned-api -- Tests intentionally use undefined/non-existent API routes to verify 404 error handling */
 import { test, expect } from '@playwright/test';
 
 /**
@@ -9,6 +11,12 @@ import { test, expect } from '@playwright/test';
  * instead of proxying them to the frontend.
  *
  * @browsers chromium, api (ONLY - no firefox/webkit)
+ *
+ * ESLint disable note: require-success-tests-for-error-tests is disabled because
+ * this file specifically tests the API Gateway's error handling for undefined routes.
+ * These are not CRUD endpoints - they are intentionally invalid routes used to verify
+ * the gateway returns proper 404 JSON responses. Success path tests for valid proxy
+ * routes are covered in separate test files for each proxied service.
  */
 
 test.describe('Proxy Handler - Undefined API Routes', () => {

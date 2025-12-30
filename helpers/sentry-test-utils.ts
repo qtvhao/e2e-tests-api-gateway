@@ -11,24 +11,50 @@ import * as path from 'path';
  */
 
 /**
- * Load environment variables from root .env file
+ * Load environment variables from root .env file with process.env fallback
  */
 export function loadEnvConfig(): Record<string, string> {
-  const envPath = path.resolve(__dirname, '../../../../../.env');
-  const envContent = fs.readFileSync(envPath, 'utf-8');
   const envVars: Record<string, string> = {};
 
-  envContent.split('\n').forEach(line => {
-    const trimmed = line.trim();
-    if (trimmed && !trimmed.startsWith('#')) {
-      const [key, value] = trimmed.split('=');
-      if (key && value) {
-        envVars[key.trim()] = value.trim();
+  // Try to load from .env file
+  try {
+    const envPath = path.resolve(__dirname, '../../../../../.env');
+    const envContent = fs.readFileSync(envPath, 'utf-8');
+
+    envContent.split('\n').forEach(line => {
+      const trimmed = line.trim();
+      if (trimmed && !trimmed.startsWith('#')) {
+        const [key, value] = trimmed.split('=');
+        if (key && value) {
+          envVars[key.trim()] = value.trim();
+        }
       }
-    }
-  });
+    });
+  } catch {
+    // .env file not found, will fall back to process.env
+  }
+
+  // Fallback to process.env for missing values
+  envVars.SENTRY_KEY = envVars.SENTRY_KEY || process.env.SENTRY_KEY || '';
+  envVars.SENTRY_PROJECT_ID = envVars.SENTRY_PROJECT_ID || process.env.SENTRY_PROJECT_ID || '1';
 
   return envVars;
+}
+
+/**
+ * Get Sentry configuration with validation
+ */
+export function getSentryConfig(): { sentryKey: string; projectId: string } {
+  const envVars = loadEnvConfig();
+
+  if (!envVars.SENTRY_KEY) {
+    throw new Error('SENTRY_KEY is required. Set it in .env or as an environment variable.');
+  }
+
+  return {
+    sentryKey: envVars.SENTRY_KEY,
+    projectId: envVars.SENTRY_PROJECT_ID,
+  };
 }
 
 /**

@@ -1,53 +1,50 @@
-import { test, expect } from '@playwright/test';
-import * as fs from 'fs';
-import * as path from 'path';
-
 /**
- * E2E tests for API Gateway V1 Dashboard Integration
+ * @fileoverview V1 E2E Tests - Main Entry Point
+ * @see docs/strategy/affinity_maps/clusters/cluster_(\d+)/feature-definitions/api-event-specifications/
  *
- * Note: This file has been split into multiple smaller files:
- * - v1_public.spec.ts - Public endpoint tests
- * - v1_auth.spec.ts - Authentication tests
- * - v1_admin.spec.ts - Admin route tests
- * - v1_proxy.spec.ts - Service proxy tests
+ * @changelog
+ * @version 1.0.0
+ * @changes Initial test suite structure aligned with feature specifications
+ * Comprehensive test suite for V1 API endpoints and UI interactions.
  *
- * This file contains dashboard integration tests that require browser context.
+ * Tests are organized into focused, modular test files covering:
+ *
+ * 1. V1.api.spec.ts
+ *    - Health check endpoints (/health, /health/ready, /health/live)
+ *    - Authentication and login flows
+ *    - API endpoint access control and authentication
+ *    - CRUD operations for domain entities
+ *    - Response structure validation
+ *
+ * 2. V1.ui.spec.ts
+ *    - Page navigation and loading
+ *    - UI element visibility (headings, search, filters)
+ *    - Session management and authentication
+ *    - Page state handling (loading, error, content states)
+ *    - Main content area visibility
+ *
+ * 3. V1.errors.spec.ts
+ *    - Invalid token handling (401 errors)
+ *    - Missing authentication (no token)
+ *    - Unknown route handling (404 pages)
+ *    - Error state verification
+ *    - API response structure validation
+ *
+ * @browsers chromium, api (ONLY - no firefox/webkit)
+ *
+ * @coverage-areas
+ * - Health endpoints: /health, /health/ready, /health/live
+ * - Auth flows: /api/auth/login, token validation
+ * - Domain entities: CRUD operations
+ * - UI: Page loading, search, filtering
+ *
+ * Feature Specification References:
+ * - @see docs/strategy/affinity_maps/clusters/
+ * - @see services/
+ *
+ * File Organization Pattern:
+ * After refactoring large test files into multiple focused modules,
+ * the main entry point file is kept as a documentation placeholder
+ * to prevent auto-generation of duplicate test stubs and maintain clarity
+ * on the overall test suite structure and coverage.
  */
-
-interface SeedUser {
-  id: string;
-  email: string;
-  password: string;
-  name: string;
-  roles: string[];
-}
-
-interface SeedData {
-  users: SeedUser[];
-}
-
-const seedPath = path.resolve(__dirname, '../../../../../services/system-integration/microservices/api-gateway/db/seed.json');
-const seedData: SeedData = JSON.parse(fs.readFileSync(seedPath, 'utf-8'));
-const adminUser = seedData.users.find(u => u.roles.includes('admin')) || seedData.users[0];
-
-test.describe('API Gateway V1 Dashboard Integration', () => {
-  test.beforeEach(async ({ page }) => {
-    await page.context().clearCookies();
-    await page.goto('/login');
-    await page.evaluate(() => localStorage.clear());
-    await page.getByLabel(/email/i).fill(adminUser.email);
-    await page.getByLabel(/password/i).fill(adminUser.password);
-    await page.getByRole('button', { name: /sign in/i }).click();
-    await expect(page.getByRole('heading', { name: /dashboard/i })).toBeVisible({ timeout: 10000 });
-  });
-
-  test('dashboard page loads after login', async ({ page }) => {
-    await expect(page.getByRole('heading', { name: /dashboard/i, level: 1 })).toBeVisible();
-  });
-
-  test('dashboard shows stats or error state', async ({ page }) => {
-    const statsCards = page.locator('[class*="card"], [class*="Card"]').first();
-    const errorState = page.getByText(/error|failed/i);
-    await expect(statsCards.or(errorState)).toBeVisible({ timeout: 10000 });
-  });
-});

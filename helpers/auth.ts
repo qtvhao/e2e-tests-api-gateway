@@ -1,3 +1,4 @@
+/* eslint-disable playwright-custom/require-success-tests-for-error-tests -- Helper module with utility functions only, no test assertions. Not a test file. */
 import { Page, APIRequestContext } from '@playwright/test';
 
 /**

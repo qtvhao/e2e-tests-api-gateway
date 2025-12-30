@@ -1,29 +1,29 @@
 /**
- * @fileoverview Auth Helpers E2E Tests - Main Entry Point
+ * @fileoverview Proxy Websocket E2E Tests - Main Entry Point
  * @see docs/strategy/affinity_maps/clusters/cluster_(\d+)/feature-definitions/api-event-specifications/
  *
  * @changelog
  * @version 1.0.0
  * @changes Initial test suite structure aligned with feature specifications
- * Comprehensive test suite for Auth Helpers API endpoints and UI interactions.
+ * Comprehensive test suite for Proxy Websocket API endpoints and UI interactions.
  *
  * Tests are organized into focused, modular test files covering:
  *
- * 1. Auth Helpers.api.spec.ts
+ * 1. Proxy Websocket.api.spec.ts
  *    - Health check endpoints (/health, /health/ready, /health/live)
  *    - Authentication and login flows
  *    - API endpoint access control and authentication
  *    - CRUD operations for domain entities
  *    - Response structure validation
  *
- * 2. Auth Helpers.ui.spec.ts
+ * 2. Proxy Websocket.ui.spec.ts
  *    - Page navigation and loading
  *    - UI element visibility (headings, search, filters)
  *    - Session management and authentication
  *    - Page state handling (loading, error, content states)
  *    - Main content area visibility
  *
- * 3. Auth Helpers.errors.spec.ts
+ * 3. Proxy Websocket.errors.spec.ts
  *    - Invalid token handling (401 errors)
  *    - Missing authentication (no token)
  *    - Unknown route handling (404 pages)

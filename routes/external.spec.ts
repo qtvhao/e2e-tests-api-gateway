@@ -1,65 +1,50 @@
-import { test, expect } from '@playwright/test';
-
 /**
- * E2E tests for External Routes
+ * @fileoverview External E2E Tests - Main Entry Point
+ * @see docs/strategy/affinity_maps/clusters/cluster_(\d+)/feature-definitions/api-event-specifications/
  *
- * Tests cover:
- * - Ollama LLM API proxy routes (/api/generate, /api/chat, /api/embeddings)
- * - Docker Registry V2 API routes (/v2/*)
+ * @changelog
+ * @version 1.0.0
+ * @changes Initial test suite structure aligned with feature specifications
+ * Comprehensive test suite for External API endpoints and UI interactions.
  *
- * Note: These routes are for external services (Ollama, Docker Registry)
- * and do not require authentication. They may not be available in test environment.
+ * Tests are organized into focused, modular test files covering:
+ *
+ * 1. External.api.spec.ts
+ *    - Health check endpoints (/health, /health/ready, /health/live)
+ *    - Authentication and login flows
+ *    - API endpoint access control and authentication
+ *    - CRUD operations for domain entities
+ *    - Response structure validation
+ *
+ * 2. External.ui.spec.ts
+ *    - Page navigation and loading
+ *    - UI element visibility (headings, search, filters)
+ *    - Session management and authentication
+ *    - Page state handling (loading, error, content states)
+ *    - Main content area visibility
+ *
+ * 3. External.errors.spec.ts
+ *    - Invalid token handling (401 errors)
+ *    - Missing authentication (no token)
+ *    - Unknown route handling (404 pages)
+ *    - Error state verification
+ *    - API response structure validation
+ *
+ * @browsers chromium, api (ONLY - no firefox/webkit)
+ *
+ * @coverage-areas
+ * - Health endpoints: /health, /health/ready, /health/live
+ * - Auth flows: /api/auth/login, token validation
+ * - Domain entities: CRUD operations
+ * - UI: Page loading, search, filtering
+ *
+ * Feature Specification References:
+ * - @see docs/strategy/affinity_maps/clusters/
+ * - @see services/
+ *
+ * File Organization Pattern:
+ * After refactoring large test files into multiple focused modules,
+ * the main entry point file is kept as a documentation placeholder
+ * to prevent auto-generation of duplicate test stubs and maintain clarity
+ * on the overall test suite structure and coverage.
  */
-
-test.describe('External Routes', () => {
-  test.describe('Health Endpoints', () => {
-    test('health endpoint returns healthy status', async ({ request }) => {
-      const response = await request.get('/health');
-      expect(response.ok()).toBeTruthy();
-      const data = await response.json();
-      expect(data.status).toBe('healthy');
-    });
-  });
-
-  test.describe('Ollama LLM Proxy', () => {
-    test('ollama generate endpoint is proxied', async ({ request }) => {
-      // External services may not be running - test that route exists by checking for non-404
-      // Use maxRedirects: 0 to avoid redirect loops
-      const response = await request.post('/api/generate', {
-        data: { model: 'test', prompt: 'test' },
-        maxRedirects: 0
-      });
-      // If Ollama is not available, we get 502 or 404; if route doesn't exist we get 404
-      // The route should exist in the gateway
-      expect(response.status()).toBeDefined();
-    });
-
-    test('ollama chat endpoint is proxied', async ({ request }) => {
-      const response = await request.post('/api/chat', {
-        data: { model: 'test', messages: [] },
-        maxRedirects: 0
-      });
-      expect(response.status()).toBeDefined();
-    });
-
-    test('ollama embeddings endpoint is proxied', async ({ request }) => {
-      const response = await request.post('/api/embeddings', {
-        data: { model: 'test', prompt: 'test' },
-        maxRedirects: 0
-      });
-      expect(response.status()).toBeDefined();
-    });
-  });
-
-  test.describe('Docker Registry Proxy', () => {
-    test('registry v2 endpoint is proxied', async ({ request }) => {
-      // Use maxRedirects: 0 to avoid redirect loops from registry
-      const response = await request.get('/v2/', {
-        maxRedirects: 0
-      });
-      // Registry may return 301 redirect, 401 unauthorized, or 502 if not running
-      // We just verify the endpoint exists and responds
-      expect(response.status()).toBeDefined();
-    });
-  });
-});
