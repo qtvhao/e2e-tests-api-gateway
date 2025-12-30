@@ -100,7 +100,7 @@ export async function logout(page: Page): Promise<void> {
  * @returns Authentication token
  */
 export async function getAuthToken(request: APIRequestContext, email: string, password: string): Promise<string> {
-  const response = await request.post('/api/auth/login', {
+  const response = await request.post('/api/v1/auth/login', {
     data: { email, password }
   });
 
