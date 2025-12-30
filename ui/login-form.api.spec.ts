@@ -18,9 +18,9 @@
  * - login-form.validation.spec.ts (Validation rules)
  */
 
-import { test, expect } from '@playwright/test';
+import { test, expect, TEST_USERS } from '../fixtures/api-fixtures';
 import { loadTestConfig } from '../helpers/test-config';
-import { TEST_USERS } from '../helpers/test-users';
+import { expectHealthy, expectSuccessResponse } from '../helpers/api-test-utils';
 
 test.describe('Login Form - API Tests', () => {
   const config = loadTestConfig();

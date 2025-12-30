@@ -23,10 +23,16 @@
  * See: auth_api.spec.ts, login-form.api.spec.ts
  *
  */
-import { test, expect } from '@playwright/test';
+import { test, expect, TEST_USERS } from '../../fixtures/api-fixtures';
 import { loadTestConfig } from '../../helpers/test-config';
-import { TEST_USERS } from '../../helpers/test-users';
 import { getAuthToken } from '../../helpers/auth';
+import {
+  getWithAuth,
+  putWithAuth,
+  expectHealthy,
+  expectUnauthorized,
+  expectSuccessResponse,
+} from '../../helpers/api-test-utils';
 
 test.describe('Notification Settings Form - API Tests', () => {
   const config = loadTestConfig();
