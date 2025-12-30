@@ -33,14 +33,14 @@ test.describe('Proxy Handler - Undefined API Routes', () => {
   });
 
   test('returns 404 for nested undefined API path', async ({ request }) => {
-    const response = await request.get('/api/v1/some/nested/undefined/path');
+    const response = await request.get('/api/nested/undefined/path');
 
     expect(response.status()).toBe(404);
 
     const body = await response.json();
     expect(body.error.code).toBe('NOT_FOUND');
     expect(body.error.message).toBe('API endpoint not found');
-    expect(body.error.path).toBe('/api/v1/some/nested/undefined/path');
+    expect(body.error.path).toBe('/api/nested/undefined/path');
   });
 
   test('returns 404 for POST to undefined API endpoint', async ({ request }) => {

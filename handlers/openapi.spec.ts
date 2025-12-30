@@ -34,12 +34,13 @@ test.describe('OpenAPI/Swagger - API Tests', () => {
       expect(response.headers()['content-type']).toContain('text/html');
     });
 
-    test('GET /swagger/ serves content or returns expected status', async ({ request }) => {
-      const response = await request.get(`${API_BASE_URL}/swagger/`);
+    test('GET /swagger/ redirects to swagger/index.html', async ({ request }) => {
+      const response = await request.get(`${API_BASE_URL}/swagger/`, {
+        maxRedirects: 0  // Don't follow redirects to check actual response
+      });
 
-      // gin-swagger may return 200, redirect, or 404 for bare /swagger/ path
-      // The important endpoint is /swagger/index.html which is tested above
-      expect([200, 301, 302, 404]).toContain(response.status());
+      // gin-swagger redirects bare /swagger/ to /swagger/index.html with 301
+      expect(response.status()).toBe(301);
     });
   });
 
@@ -215,10 +216,9 @@ test.describe('OpenAPI/Swagger - API Tests', () => {
       const loginEndpoint = spec.paths['/api/v1/auth/login']?.post;
       expect(loginEndpoint).toBeDefined();
 
-      // Login should NOT have security requirement (or it should be empty)
-      if (loginEndpoint.security) {
-        expect(loginEndpoint.security).toHaveLength(0);
-      }
+      // Login should NOT have security requirement - security field should either be undefined or empty
+      const securityRequirement = loginEndpoint.security ?? [];
+      expect(securityRequirement).toHaveLength(0);
     });
 
     test('Endpoints have proper response definitions', async ({ request }) => {
