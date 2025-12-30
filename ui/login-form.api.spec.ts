@@ -19,8 +19,8 @@
  */
 
 import { test, expect } from '@playwright/test';
-import { loadTestConfig } from '../system-integration/api-gateway/helpers/test-config';
-import { TEST_USERS } from './helpers/test-users';
+import { loadTestConfig } from '../helpers/test-config';
+import { TEST_USERS } from '../helpers/test-users';
 
 test.describe('Login Form - API Tests', () => {
   const config = loadTestConfig();
