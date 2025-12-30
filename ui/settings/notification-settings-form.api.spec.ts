@@ -25,7 +25,7 @@
  */
 import { test, expect } from '@playwright/test';
 import { loadTestConfig } from '../../helpers/test-config';
-import { TEST_USERS } from '../../../../web-app/helpers/test-users';
+import { TEST_USERS } from '../../helpers/test-users';
 import { getAuthToken } from '../../helpers/auth';
 
 test.describe('Notification Settings Form - API Tests', () => {
