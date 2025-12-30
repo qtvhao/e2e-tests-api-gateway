@@ -25,8 +25,8 @@
  * Tests for NotificationSettings component form submission
  */
 import { test, expect } from '@playwright/test';
-import { loadTestConfig } from '../helpers/test-config';
-import { loginAsAdmin } from '../../system-integration/api-gateway/helpers/auth';
+import { loadTestConfig } from '../../helpers/test-config';
+import { loginAsAdmin } from '../../helpers/auth';
 
 test.describe('Notification Settings Form - UI Tests', () => {
   const config = loadTestConfig();

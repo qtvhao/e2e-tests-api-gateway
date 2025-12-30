@@ -24,8 +24,9 @@
  *
  */
 import { test, expect } from '@playwright/test';
-import { loadTestConfig, TEST_USERS } from '../helpers/test-config';
-import { getAuthToken } from '../../system-integration/api-gateway/helpers/auth';
+import { loadTestConfig } from '../../helpers/test-config';
+import { TEST_USERS } from '../../../../web-app/helpers/test-users';
+import { getAuthToken } from '../../helpers/auth';
 
 test.describe('Notification Settings Form - API Tests', () => {
   const config = loadTestConfig();
