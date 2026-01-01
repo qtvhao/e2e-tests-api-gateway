@@ -35,9 +35,7 @@ test.describe('OpenAPI/Swagger - API Tests', () => {
     });
 
     test('GET /swagger/ returns 404 (use /swagger/index.html instead)', async ({ request }) => {
-      const response = await request.get(`${API_BASE_URL}/swagger/`, {
-        maxRedirects: 0  // Don't follow redirects to check actual response
-      });
+      const response = await request.get(`${API_BASE_URL}/swagger/`);
 
       // gin-swagger serves at /swagger/index.html, bare /swagger/ returns 404
       expect(response.status()).toBe(404);

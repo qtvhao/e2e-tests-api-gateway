@@ -2,6 +2,8 @@
  * @fileoverview Login Form - UI Tests - Form field rendering and user interactions
  * @see web/app/src/pages/LoginPage.tsx
  *
+ * Tests for LoginPage component form submission
+ *
  * @version 1.0.0
  * @test-type ui
  * @form-type login
@@ -19,64 +21,43 @@
  */
 
 import { test, expect } from '@playwright/test';
-import { loadTestConfig } from '../helpers/test-config';
 import { TEST_USERS } from '../helpers/test-users';
+import { verifyNoErrorBoundary } from '../helpers/ui-test-utils';
 
+// Tests for LoginPage component form submission
 test.describe('Login Form - UI Tests', () => {
-  const config = loadTestConfig();
-  const LOGIN_URL = config.baseUrl;
+  test('UI: Login page displays form and handles submission', async ({ page }) => {
+    // Navigate to login page
+    await page.goto('/login', { waitUntil: 'networkidle' });
 
-  test.beforeEach(async ({ page }) => {
-    await page.goto(`${LOGIN_URL}/login`);
-    await page.waitForLoadState('networkidle');
-  });
+    // Verify no error boundary
+    await verifyNoErrorBoundary(page);
 
-  test('UI: Login page loads with form elements', async ({ page }) => {
-    const emailInput = page.locator('input[type="email"], input[placeholder*="email" i]');
-    const passwordInput = page.locator('input[type="password"]');
-    const submitButton = page.locator('button[type="submit"]').or(page.getByRole('button', { name: /sign in|login/i }));
+    // Verify form elements are visible using role-based selectors
+    const emailInput = page.getByRole('textbox', { name: /email/i });
+    const passwordInput = page.getByRole('textbox', { name: /password/i });
+    const submitButton = page.getByRole('button', { name: /sign in/i });
 
     await expect(emailInput).toBeVisible();
     await expect(passwordInput).toBeVisible();
     await expect(submitButton).toBeVisible();
-  });
+    await expect(submitButton).toBeEnabled();
 
-  test('UI: User can enter email and password', async ({ page }) => {
-    const emailInput = page.locator('input[type="email"], input[placeholder*="email" i]').first();
-    const passwordInput = page.locator('input[type="password"]').first();
-
+    // Fill in credentials
     await emailInput.fill(TEST_USERS.admin.email);
     await passwordInput.fill(TEST_USERS.admin.password);
 
+    // Verify values are filled
     await expect(emailInput).toHaveValue(TEST_USERS.admin.email);
     await expect(passwordInput).toHaveValue(TEST_USERS.admin.password);
-  });
 
-  test('UI: Submit button is interactive', async ({ page }) => {
-    const submitButton = page.locator('button[type="submit"]').or(page.getByRole('button', { name: /sign in|login/i }));
-    await expect(submitButton).toBeEnabled();
-  });
-
-  test('UI: Form submission navigates to authenticated page', async ({ page }) => {
-    const emailInput = page.locator('input[type="email"], input[placeholder*="email" i]').first();
-    const passwordInput = page.locator('input[type="password"]').first();
-    const submitButton = page.locator('button[type="submit"]').or(page.getByRole('button', { name: /sign in|login/i }));
-
-    await emailInput.fill(TEST_USERS.admin.email);
-    await passwordInput.fill(TEST_USERS.admin.password);
-
-    // Navigate with real backend (no mocking allowed in E2E)
+    // Submit form and wait for navigation
     await submitButton.click();
 
-    // Wait for navigation to complete
-    await page.waitForNavigation({ waitUntil: 'networkidle' }).catch(() => {
-      // Navigation may not happen if credentials are incorrect, which is OK
-    });
+    // Wait for successful navigation to dashboard (login should succeed with valid credentials)
+    await expect(page).toHaveURL('/');
 
-    // Verify page has changed or error is displayed
-    const currentUrl = page.url();
-    const hasError = await page.locator('div[role="alert"], .error, [class*="error"]').isVisible().catch(() => false);
-
-    expect(currentUrl.includes('login') === false || hasError).toBeTruthy();
+    // Verify successfully navigated to dashboard
+    await expect(page.getByRole('heading', { name: /dashboard/i })).toBeVisible();
   });
 });
