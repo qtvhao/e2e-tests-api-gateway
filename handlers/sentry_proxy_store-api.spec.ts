@@ -18,10 +18,11 @@ const { sentryKey: SENTRY_KEY, projectId: PROJECT_ID } = getSentryConfig();
 
 test.describe('Sentry/Bugsink Store API', () => {
   test.describe('Route Availability', () => {
-    test('sentry proxy route exists and responds', async ({ request }) => {
+    test('sentry proxy route exists and redirects to login', async ({ request }) => {
       const response = await request.get('/sentry/', {
         maxRedirects: 0,
       });
+      // Bugsink redirects to login page - this confirms the route is proxied correctly
       expect(response.status()).toBe(302);
     });
 

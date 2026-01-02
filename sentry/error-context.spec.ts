@@ -1,6 +1,7 @@
 /* eslint-disable playwright-custom/no-unversioned-api -- Sentry/Bugsink uses its own API format /sentry/api/{project_id}/envelope/, not our versioned REST API */
 import { test, expect } from '@playwright/test';
 import { loadEnvConfig, generateEventId, getSentryRequestHeaders } from '../helpers/sentry-test-utils';
+import { ADMIN_CREDENTIALS } from '../helpers/auth';
 
 /**
  * Sentry SDK - Error Context and Breadcrumbs Tests
@@ -110,7 +111,7 @@ test.describe('Sentry SDK - Error Context and Breadcrumbs', () => {
         logger: 'ErrorTestPage',
         user: {
           id: 'usr_admin_123',
-          email: 'admin@ugjb.com',
+          email: ADMIN_CREDENTIALS.email,
           username: 'Admin User',
         },
         tags: {

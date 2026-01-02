@@ -20,9 +20,9 @@ test.describe('Settings Handler', () => {
   });
 
   test.describe('Notification Settings Endpoint', () => {
-    test('GET /api/v1/settings/notifications returns settings with auth', async ({ request }) => {
+    test('GET /api/v1/user-preferences/notifications returns settings with auth', async ({ request }) => {
       const token = await getAdminToken(request);
-      const response = await request.get('/api/v1/settings/notifications', {
+      const response = await request.get('/api/v1/user-preferences/notifications', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const body = await expectSuccessResponse(response);
@@ -41,8 +41,8 @@ test.describe('Settings Handler', () => {
       expect((body.items as Record<string, unknown>[])[0]).toHaveProperty('description');
     });
 
-    test('GET /api/v1/settings/notifications requires authentication', async ({ request }) => {
-      const response = await request.get('/api/v1/settings/notifications');
+    test('GET /api/v1/user-preferences/notifications requires authentication', async ({ request }) => {
+      const response = await request.get('/api/v1/user-preferences/notifications');
       await expectUnauthorized(response);
     });
   });

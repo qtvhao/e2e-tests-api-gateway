@@ -1,5 +1,6 @@
 /* eslint-disable playwright-custom/require-success-tests-for-error-tests */
 /* eslint-disable playwright-custom/no-unversioned-api -- Tests intentionally use undefined/non-existent API routes to verify 404 error handling */
+/* eslint-disable playwright-custom/valid-bounded-context-route -- Tests intentionally use invalid/legacy routes to verify 404 error handling */
 import { test, expect } from '@playwright/test';
 
 /**

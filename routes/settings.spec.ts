@@ -20,11 +20,11 @@ test.describe('Settings Routes', () => {
   });
 
   test.describe('Settings API Routes', () => {
-    test('PUT /api/v1/settings/notifications updates preferences with auth', async ({ request }) => {
+    test('PUT /api/v1/user-preferences/notifications updates preferences with auth', async ({ request }) => {
       const token = await getAdminToken(request);
       const testPreferences = { email: true, push: false, assignments: true, skillUpdates: false };
 
-      const response = await request.put('/api/v1/settings/notifications', {
+      const response = await request.put('/api/v1/user-preferences/notifications', {
         headers: { 'Authorization': `Bearer ${token}` },
         data: { preferences: testPreferences }
       });
@@ -38,9 +38,9 @@ test.describe('Settings Routes', () => {
       expect(body.preferences).toHaveProperty('push');
     });
 
-    test('GET /api/v1/settings/notifications returns items array', async ({ request }) => {
+    test('GET /api/v1/user-preferences/notifications returns items array', async ({ request }) => {
       const token = await getAdminToken(request);
-      const response = await request.get('/api/v1/settings/notifications', {
+      const response = await request.get('/api/v1/user-preferences/notifications', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const body = await expectSuccessResponse(response);
@@ -52,8 +52,8 @@ test.describe('Settings Routes', () => {
       expect((body.items as unknown[]).length).toBeGreaterThanOrEqual(1);
     });
 
-    test('PUT /api/v1/settings/notifications requires authentication', async ({ request }) => {
-      const response = await request.put('/api/v1/settings/notifications', {
+    test('PUT /api/v1/user-preferences/notifications requires authentication', async ({ request }) => {
+      const response = await request.put('/api/v1/user-preferences/notifications', {
         data: { preferences: { email: true } }
       });
       await expectUnauthorized(response);
