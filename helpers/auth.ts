@@ -28,11 +28,20 @@ export const TEST_USER_CREDENTIALS = {
  * @param page - Playwright Page object
  */
 export async function loginAsAdmin(page: Page): Promise<void> {
-  await page.goto('/login');
+  await page.goto('/login', { waitUntil: 'domcontentloaded' });
   await page.getByLabel(/email/i).fill('admin@ugjb.com');
   await page.getByLabel(/password/i).fill('Admin@123!');
+
+  // Wait for login API response before clicking
+  const loginResponsePromise = page.waitForResponse(
+    resp => resp.url().includes('/api/v1/auth/login') && resp.status() === 200,
+    { timeout: 15000 }
+  );
   await page.getByRole('button', { name: /sign in|log in/i }).click();
-  await page.waitForURL('/');
+  await loginResponsePromise;
+
+  // Wait for navigation to complete
+  await page.waitForURL('/', { timeout: 10000 });
 }
 
 /**
@@ -41,11 +50,20 @@ export async function loginAsAdmin(page: Page): Promise<void> {
  * @param page - Playwright Page object
  */
 export async function loginAsUser(page: Page): Promise<void> {
-  await page.goto('/login');
+  await page.goto('/login', { waitUntil: 'domcontentloaded' });
   await page.getByLabel(/email/i).fill('user@ugjb.com');
   await page.getByLabel(/password/i).fill('User@123!');
+
+  // Wait for login API response before clicking
+  const loginResponsePromise = page.waitForResponse(
+    resp => resp.url().includes('/api/v1/auth/login') && resp.status() === 200,
+    { timeout: 15000 }
+  );
   await page.getByRole('button', { name: /sign in|log in/i }).click();
-  await page.waitForURL('/');
+  await loginResponsePromise;
+
+  // Wait for navigation to complete
+  await page.waitForURL('/', { timeout: 10000 });
 }
 
 /**
@@ -54,11 +72,20 @@ export async function loginAsUser(page: Page): Promise<void> {
  * @param page - Playwright Page object
  */
 export async function loginAsTestUser(page: Page): Promise<void> {
-  await page.goto('/login');
+  await page.goto('/login', { waitUntil: 'domcontentloaded' });
   await page.getByLabel(/email/i).fill('test@ugjb.com');
   await page.getByLabel(/password/i).fill('Test@123!');
+
+  // Wait for login API response before clicking
+  const loginResponsePromise = page.waitForResponse(
+    resp => resp.url().includes('/api/v1/auth/login') && resp.status() === 200,
+    { timeout: 15000 }
+  );
   await page.getByRole('button', { name: /sign in|log in/i }).click();
-  await page.waitForURL('/');
+  await loginResponsePromise;
+
+  // Wait for navigation to complete
+  await page.waitForURL('/', { timeout: 10000 });
 }
 
 /**
@@ -76,11 +103,20 @@ export async function login(page: Page): Promise<void> {
  * @param password - User password
  */
 export async function loginAs(page: Page, email: string, password: string): Promise<void> {
-  await page.goto('/login');
+  await page.goto('/login', { waitUntil: 'domcontentloaded' });
   await page.getByLabel(/email/i).fill(email);
   await page.getByLabel(/password/i).fill(password);
+
+  // Wait for login API response before clicking
+  const loginResponsePromise = page.waitForResponse(
+    resp => resp.url().includes('/api/v1/auth/login') && resp.status() === 200,
+    { timeout: 15000 }
+  );
   await page.getByRole('button', { name: /sign in|log in/i }).click();
-  await page.waitForURL('/');
+  await loginResponsePromise;
+
+  // Wait for navigation to complete
+  await page.waitForURL('/', { timeout: 10000 });
 }
 
 /**
