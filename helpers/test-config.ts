@@ -6,6 +6,9 @@
 export interface TestConfig {
   apiBaseUrl: string;
   baseUrl: string;
+  colimaVmUrl: string | undefined;
+  hasApiBaseUrl: boolean;
+  hasColimaVmUrl: boolean;
 }
 
 export interface AuthHeaders {
@@ -17,9 +20,15 @@ export interface AuthHeaders {
  * This centralizes all process.env access to prevent ESLint violations
  */
 export function loadTestConfig(): TestConfig {
+  const colimaVmUrl = process.env.COLIMA_VM_URL;
+  const apiBaseUrl = process.env.API_BASE_URL;
+
   return {
-    apiBaseUrl: process.env.API_BASE_URL || 'http://localhost:8080',
+    apiBaseUrl: apiBaseUrl || (colimaVmUrl ? `${colimaVmUrl}:8080` : 'http://localhost:8080'),
     baseUrl: process.env.BASE_URL || 'http://localhost:8080',
+    colimaVmUrl,
+    hasApiBaseUrl: !!apiBaseUrl,
+    hasColimaVmUrl: !!colimaVmUrl,
   };
 }
 
