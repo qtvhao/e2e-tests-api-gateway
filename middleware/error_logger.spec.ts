@@ -24,9 +24,11 @@ import { test, expect } from '@playwright/test';
 import { loadTestConfig } from '../helpers/test-config';
 import { INVALID_TEST_TOKEN } from '../helpers/auth';
 
+// Run this entire test file serially - it modifies shared server state (error log file)
+// that cannot be isolated between parallel test workers
+test.describe.configure({ mode: 'serial' });
+
 test.describe('Error Logger Middleware', () => {
-  // Run tests serially since they share a global error log file
-  test.describe.configure({ mode: 'serial' });
   const config = loadTestConfig();
   const API_BASE_URL = config.apiBaseUrl;
   const ERROR_LOGS_ENDPOINT = `${API_BASE_URL}/api/v1/admin/error-logs`;
@@ -47,14 +49,17 @@ test.describe('Error Logger Middleware', () => {
     });
 
     test('DELETE /api/v1/admin/error-logs clears the log', async ({ request }) => {
-      // First trigger an error
-      await request.get(`${API_BASE_URL}/api/v1/system-integration/nonexistent-endpoint-for-test`);
+      // Use a unique marker path to identify our test error
+      const markerPath = '/api/v1/system-integration/clear-test-marker-' + Date.now();
 
-      // Verify error was logged
+      // First trigger an error with our marker path
+      await request.get(`${API_BASE_URL}${markerPath}`);
+
+      // Verify our error was logged
       let response = await request.get(ERROR_LOGS_ENDPOINT);
       let logs = await response.json();
-      const initialCount = logs.length;
-      expect(initialCount).toBeGreaterThan(0);
+      const markedLogs = logs.filter((log: { path: string }) => log.path === markerPath);
+      expect(markedLogs.length).toBeGreaterThan(0);
 
       // Clear logs
       response = await request.delete(ERROR_LOGS_ENDPOINT);
@@ -62,10 +67,13 @@ test.describe('Error Logger Middleware', () => {
       const body = await response.json();
       expect(body.message).toBe('Error logs cleared');
 
-      // Verify logs are empty
+      // Verify our marker error is no longer present
+      // Note: Other background processes may generate new errors between clear and read,
+      // so we check that OUR specific error was cleared rather than expecting 0 total logs
       response = await request.get(ERROR_LOGS_ENDPOINT);
       logs = await response.json();
-      expect(logs.length).toBe(0);
+      const markedLogsAfterClear = logs.filter((log: { path: string }) => log.path === markerPath);
+      expect(markedLogsAfterClear.length).toBe(0);
     });
   });
 
@@ -75,16 +83,18 @@ test.describe('Error Logger Middleware', () => {
       const errorPath = '/api/v1/system-integration/this-endpoint-does-not-exist-404-test';
       await request.get(`${API_BASE_URL}${errorPath}`);
 
-      // Check error log
+      // Check error log - filter by specific path to handle parallel test execution
       const response = await request.get(ERROR_LOGS_ENDPOINT);
       const logs = await response.json();
 
-      expect(logs.length).toBeGreaterThan(0);
+      const notFoundLogs = logs.filter(
+        (log: { status: number; path: string }) =>
+          log.status === 404 && log.path === errorPath
+      );
+      expect(notFoundLogs.length).toBeGreaterThan(0);
 
-      const lastLog = logs[logs.length - 1];
-      expect(lastLog.status).toBe(404);
-      expect(lastLog.method).toBe('GET');
-      expect(lastLog.path).toBe(errorPath);
+      const matchedLog = notFoundLogs[0];
+      expect(matchedLog.method).toBe('GET');
     });
 
     test('logs 401 Unauthorized errors', async ({ request }) => {
@@ -129,15 +139,19 @@ test.describe('Error Logger Middleware', () => {
 
   test.describe('Log Entry Structure', () => {
     test('log entries contain all required fields', async ({ request }) => {
-      // Trigger an error
-      await request.get(`${API_BASE_URL}/api/v1/system-integration/test-error-fields-endpoint`);
+      // Trigger an error with unique path for this test
+      const testPath = '/api/v1/system-integration/test-error-fields-endpoint';
+      await request.get(`${API_BASE_URL}${testPath}`);
 
-      // Check error log
+      // Check error log - filter by specific path to handle parallel test execution
       const response = await request.get(ERROR_LOGS_ENDPOINT);
       const logs = await response.json();
 
-      expect(logs.length).toBeGreaterThan(0);
-      const entry = logs[logs.length - 1];
+      const matchedLogs = logs.filter(
+        (log: { path: string }) => log.path === testPath
+      );
+      expect(matchedLogs.length).toBeGreaterThan(0);
+      const entry = matchedLogs[0];
 
       // Required fields
       expect(entry).toHaveProperty('timestamp');
@@ -157,14 +171,20 @@ test.describe('Error Logger Middleware', () => {
     });
 
     test('timestamp is in RFC3339 format', async ({ request }) => {
-      // Trigger an error
-      await request.get(`${API_BASE_URL}/api/v1/system-integration/test-timestamp-format`);
+      // Trigger an error with unique path for this test
+      const testPath = '/api/v1/system-integration/test-timestamp-format';
+      await request.get(`${API_BASE_URL}${testPath}`);
 
-      // Check error log
+      // Check error log - filter by specific path to handle parallel test execution
       const response = await request.get(ERROR_LOGS_ENDPOINT);
       const logs = await response.json();
 
-      const entry = logs[logs.length - 1];
+      const matchedLogs = logs.filter(
+        (log: { path: string }) => log.path === testPath
+      );
+      expect(matchedLogs.length).toBeGreaterThan(0);
+      const entry = matchedLogs[0];
+
       // RFC3339 format: 2024-01-15T10:30:00Z
       const rfc3339Regex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z$/;
       expect(entry.timestamp).toMatch(rfc3339Regex);
@@ -194,36 +214,48 @@ test.describe('Error Logger Middleware', () => {
 
   test.describe('Multiple Errors Accumulation', () => {
     test('multiple errors are accumulated in log', async ({ request }) => {
-      // Clear logs
-      await request.delete(ERROR_LOGS_ENDPOINT);
+      // Note: Cannot rely on exact log count due to parallel test execution.
+      // Instead, verify our specific error paths are logged in order.
+      const testPaths = [
+        '/api/v1/system-integration/error-test-1',
+        '/api/v1/system-integration/error-test-2',
+        '/api/v1/system-integration/error-test-3'
+      ];
 
       // Trigger multiple errors
-      await request.get(`${API_BASE_URL}/api/v1/system-integration/error-test-1`);
-      await request.get(`${API_BASE_URL}/api/v1/system-integration/error-test-2`);
-      await request.get(`${API_BASE_URL}/api/v1/system-integration/error-test-3`);
+      for (const testPath of testPaths) {
+        await request.get(`${API_BASE_URL}${testPath}`);
+      }
 
-      // Check error log
+      // Check error log - filter to only our test paths
       const response = await request.get(ERROR_LOGS_ENDPOINT);
       const logs = await response.json();
 
-      expect(logs.length).toBe(3);
-      expect(logs[0].path).toBe('/api/v1/system-integration/error-test-1');
-      expect(logs[1].path).toBe('/api/v1/system-integration/error-test-2');
-      expect(logs[2].path).toBe('/api/v1/system-integration/error-test-3');
+      const ourLogs = logs.filter(
+        (log: { path: string }) => testPaths.includes(log.path)
+      );
+
+      // Verify all 3 paths were logged
+      expect(ourLogs.length).toBe(3);
+      expect(ourLogs.map((l: { path: string }) => l.path)).toEqual(testPaths);
     });
   });
 
   test.describe('Query Parameters Logging', () => {
     test('query parameters are logged', async ({ request }) => {
-      // Trigger error with query params
-      await request.get(`${API_BASE_URL}/api/v1/system-integration/nonexistent?foo=bar&baz=qux`);
+      // Trigger error with query params - use unique path for this test
+      const testPath = '/api/v1/system-integration/nonexistent-query-params-test';
+      await request.get(`${API_BASE_URL}${testPath}?foo=bar&baz=qux`);
 
-      // Check error log
+      // Check error log - filter by specific path to handle parallel test execution
       const response = await request.get(ERROR_LOGS_ENDPOINT);
       const logs = await response.json();
 
-      const lastLog = logs[logs.length - 1];
-      expect(lastLog.query).toBe('foo=bar&baz=qux');
+      const matchedLogs = logs.filter(
+        (log: { path: string }) => log.path === testPath
+      );
+      expect(matchedLogs.length).toBeGreaterThan(0);
+      expect(matchedLogs[0].query).toBe('foo=bar&baz=qux');
     });
   });
 

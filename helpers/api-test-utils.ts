@@ -125,6 +125,8 @@ export async function expectSuccessResponse(response: APIResponse): Promise<Reco
 
 /**
  * Validates error response with expected status code
+ * IMPORTANT: Validates status BEFORE checking body content (per no-permissive-status-expect rule)
+ * This ensures we catch 502/404 "API endpoint not found" errors instead of masking them
  * @param response - API response to validate
  * @param expectedStatus - Expected HTTP status code
  * @returns Parsed JSON body
@@ -133,8 +135,13 @@ export async function expectErrorResponse(
   response: APIResponse,
   expectedStatus: number
 ): Promise<Record<string, unknown>> {
-  const body = await expectValidApiResponse(response);
+  // First validate the status code to fail fast on incorrect status
+  // This catches cases where endpoint doesn't exist (404) or backend is down (502)
   expect(response.status()).toBe(expectedStatus);
+  // Then validate JSON format and check it's not a "not found" error
+  expectJsonContentType(response);
+  const body = await response.json();
+  expect(body.error?.message).not.toBe('API endpoint not found');
   return body;
 }
 
