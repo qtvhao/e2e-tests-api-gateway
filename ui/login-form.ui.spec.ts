@@ -27,20 +27,25 @@ import { verifyNoErrorBoundary } from '../helpers/ui-test-utils';
 // Tests for LoginPage component form submission
 test.describe('Login Form - UI Tests', () => {
   test('UI: Login page displays form and handles submission', async ({ page }) => {
-    // Navigate to login page
-    await page.goto('/login', { waitUntil: 'networkidle' });
+    // Navigate to login page with faster wait strategy
+    await page.goto('/login', { waitUntil: 'domcontentloaded' });
+
+    // Wait for form to be rendered
+    await page.waitForSelector('form, [role="form"], input[type="email"], input[name="email"]', { timeout: 10000 });
 
     // Verify no error boundary
     await verifyNoErrorBoundary(page);
 
-    // Verify form elements are visible using role-based selectors
+    // Verify form elements are visible using appropriate selectors
+    // Email input uses textbox role, password input uses getByLabel since password type doesn't have textbox role
     const emailInput = page.getByRole('textbox', { name: /email/i });
-    const passwordInput = page.getByRole('textbox', { name: /password/i });
+    const passwordInput = page.getByLabel(/password/i);
     const submitButton = page.getByRole('button', { name: /sign in/i });
 
-    await expect(emailInput).toBeVisible();
-    await expect(passwordInput).toBeVisible();
-    await expect(submitButton).toBeVisible();
+    // Wait for form elements to be visible with explicit timeouts
+    await expect(emailInput).toBeVisible({ timeout: 10000 });
+    await expect(passwordInput).toBeVisible({ timeout: 10000 });
+    await expect(submitButton).toBeVisible({ timeout: 10000 });
     await expect(submitButton).toBeEnabled();
 
     // Fill in credentials
@@ -51,13 +56,25 @@ test.describe('Login Form - UI Tests', () => {
     await expect(emailInput).toHaveValue(TEST_USERS.admin.email);
     await expect(passwordInput).toHaveValue(TEST_USERS.admin.password);
 
-    // Submit form and wait for navigation
+    // Wait for login API response before clicking
+    const loginResponsePromise = page.waitForResponse(
+      resp => resp.url().includes('/api/v1/auth/login') && resp.status() === 200,
+      { timeout: 15000 }
+    );
+
+    // Submit form
     await submitButton.click();
 
-    // Wait for successful navigation to dashboard (login should succeed with valid credentials)
-    await expect(page).toHaveURL('/');
+    // Wait for API response to complete
+    await loginResponsePromise;
 
-    // Verify successfully navigated to dashboard
-    await expect(page.getByRole('heading', { name: /dashboard/i })).toBeVisible();
+    // Wait for successful navigation to dashboard
+    await page.waitForURL('/', { timeout: 10000 });
+
+    // Wait for main content area to be visible first (ensures layout is rendered)
+    await expect(page.locator('main, [role="main"]').first()).toBeVisible({ timeout: 10000 });
+
+    // Verify successfully navigated to dashboard with explicit timeout
+    await expect(page.getByRole('heading', { name: /dashboard/i })).toBeVisible({ timeout: 10000 });
   });
 });
