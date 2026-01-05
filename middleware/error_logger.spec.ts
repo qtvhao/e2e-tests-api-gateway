@@ -23,6 +23,9 @@
 import { test, expect } from '@playwright/test';
 import { loadTestConfig } from '../helpers/test-config';
 
+// Run tests serially since they share a global error log file
+test.describe.configure({ mode: 'serial' });
+
 test.describe('Error Logger Middleware', () => {
   const config = loadTestConfig();
   const API_BASE_URL = config.apiBaseUrl;
