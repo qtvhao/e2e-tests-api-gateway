@@ -118,8 +118,9 @@ export async function expectValidApiResponse(response: APIResponse): Promise<Rec
  * @returns Parsed JSON body
  */
 export async function expectSuccessResponse(response: APIResponse): Promise<Record<string, unknown>> {
+  const body = await expectValidApiResponse(response);
   expect(response.ok()).toBe(true);
-  return expectValidApiResponse(response);
+  return body;
 }
 
 /**
@@ -132,8 +133,9 @@ export async function expectErrorResponse(
   response: APIResponse,
   expectedStatus: number
 ): Promise<Record<string, unknown>> {
+  const body = await expectValidApiResponse(response);
   expect(response.status()).toBe(expectedStatus);
-  return expectValidApiResponse(response);
+  return body;
 }
 
 /**
@@ -179,6 +181,6 @@ export async function expectNotFound(response: APIResponse): Promise<Record<stri
  */
 export async function expectHealthy(request: APIRequestContext, healthEndpoint: string): Promise<void> {
   const response = await request.get(healthEndpoint);
-  expect(response.status()).toBe(200);
   await expectValidApiResponse(response);
+  expect(response.status()).toBe(200);
 }
