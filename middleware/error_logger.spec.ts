@@ -22,11 +22,11 @@
 
 import { test, expect } from '@playwright/test';
 import { loadTestConfig } from '../helpers/test-config';
-
-// Run tests serially since they share a global error log file
-test.describe.configure({ mode: 'serial' });
+import { INVALID_TEST_TOKEN } from '../helpers/auth';
 
 test.describe('Error Logger Middleware', () => {
+  // Run tests serially since they share a global error log file
+  test.describe.configure({ mode: 'serial' });
   const config = loadTestConfig();
   const API_BASE_URL = config.apiBaseUrl;
   const ERROR_LOGS_ENDPOINT = `${API_BASE_URL}/api/v1/admin/error-logs`;
@@ -48,7 +48,7 @@ test.describe('Error Logger Middleware', () => {
 
     test('DELETE /api/v1/admin/error-logs clears the log', async ({ request }) => {
       // First trigger an error
-      await request.get(`${API_BASE_URL}/api/nonexistent-endpoint-for-test`);
+      await request.get(`${API_BASE_URL}/api/v1/system-integration/nonexistent-endpoint-for-test`);
 
       // Verify error was logged
       let response = await request.get(ERROR_LOGS_ENDPOINT);
@@ -72,7 +72,7 @@ test.describe('Error Logger Middleware', () => {
   test.describe('Error Logging - 4xx Responses', () => {
     test('logs 404 Not Found errors', async ({ request }) => {
       // Trigger a 404 error
-      const errorPath = '/api/this-endpoint-does-not-exist-404-test';
+      const errorPath = '/api/v1/system-integration/this-endpoint-does-not-exist-404-test';
       await request.get(`${API_BASE_URL}${errorPath}`);
 
       // Check error log
@@ -88,9 +88,13 @@ test.describe('Error Logger Middleware', () => {
     });
 
     test('logs 401 Unauthorized errors', async ({ request }) => {
-      // Try to access a protected endpoint without auth
-      const protectedPath = '/api/v1/admin/users';
-      await request.get(`${API_BASE_URL}${protectedPath}`);
+      // Try to access a protected endpoint with an invalid JWT token
+      const protectedPath = '/api/v1/auth/me';
+      await request.get(`${API_BASE_URL}${protectedPath}`, {
+        headers: {
+          Authorization: `Bearer ${INVALID_TEST_TOKEN}`
+        }
+      });
 
       // Check error log
       const response = await request.get(ERROR_LOGS_ENDPOINT);
@@ -126,7 +130,7 @@ test.describe('Error Logger Middleware', () => {
   test.describe('Log Entry Structure', () => {
     test('log entries contain all required fields', async ({ request }) => {
       // Trigger an error
-      await request.get(`${API_BASE_URL}/api/test-error-fields-endpoint`);
+      await request.get(`${API_BASE_URL}/api/v1/system-integration/test-error-fields-endpoint`);
 
       // Check error log
       const response = await request.get(ERROR_LOGS_ENDPOINT);
@@ -154,7 +158,7 @@ test.describe('Error Logger Middleware', () => {
 
     test('timestamp is in RFC3339 format', async ({ request }) => {
       // Trigger an error
-      await request.get(`${API_BASE_URL}/api/test-timestamp-format`);
+      await request.get(`${API_BASE_URL}/api/v1/system-integration/test-timestamp-format`);
 
       // Check error log
       const response = await request.get(ERROR_LOGS_ENDPOINT);
@@ -194,25 +198,25 @@ test.describe('Error Logger Middleware', () => {
       await request.delete(ERROR_LOGS_ENDPOINT);
 
       // Trigger multiple errors
-      await request.get(`${API_BASE_URL}/api/error-test-1`);
-      await request.get(`${API_BASE_URL}/api/error-test-2`);
-      await request.get(`${API_BASE_URL}/api/error-test-3`);
+      await request.get(`${API_BASE_URL}/api/v1/system-integration/error-test-1`);
+      await request.get(`${API_BASE_URL}/api/v1/system-integration/error-test-2`);
+      await request.get(`${API_BASE_URL}/api/v1/system-integration/error-test-3`);
 
       // Check error log
       const response = await request.get(ERROR_LOGS_ENDPOINT);
       const logs = await response.json();
 
       expect(logs.length).toBe(3);
-      expect(logs[0].path).toBe('/api/error-test-1');
-      expect(logs[1].path).toBe('/api/error-test-2');
-      expect(logs[2].path).toBe('/api/error-test-3');
+      expect(logs[0].path).toBe('/api/v1/system-integration/error-test-1');
+      expect(logs[1].path).toBe('/api/v1/system-integration/error-test-2');
+      expect(logs[2].path).toBe('/api/v1/system-integration/error-test-3');
     });
   });
 
   test.describe('Query Parameters Logging', () => {
     test('query parameters are logged', async ({ request }) => {
       // Trigger error with query params
-      await request.get(`${API_BASE_URL}/api/nonexistent?foo=bar&baz=qux`);
+      await request.get(`${API_BASE_URL}/api/v1/system-integration/nonexistent?foo=bar&baz=qux`);
 
       // Check error log
       const response = await request.get(ERROR_LOGS_ENDPOINT);
@@ -225,40 +229,40 @@ test.describe('Error Logger Middleware', () => {
 
   test.describe('HTTP Methods Logging', () => {
     test('logs POST requests', async ({ request }) => {
-      await request.post(`${API_BASE_URL}/api/nonexistent-post`);
+      await request.post(`${API_BASE_URL}/api/v1/system-integration/nonexistent-post`);
 
       const response = await request.get(ERROR_LOGS_ENDPOINT);
       const logs = await response.json();
 
       const postLogs = logs.filter(
         (log: { method: string; path: string }) =>
-          log.method === 'POST' && log.path === '/api/nonexistent-post'
+          log.method === 'POST' && log.path === '/api/v1/system-integration/nonexistent-post'
       );
       expect(postLogs.length).toBeGreaterThan(0);
     });
 
     test('logs PUT requests', async ({ request }) => {
-      await request.put(`${API_BASE_URL}/api/nonexistent-put`);
+      await request.put(`${API_BASE_URL}/api/v1/system-integration/nonexistent-put`);
 
       const response = await request.get(ERROR_LOGS_ENDPOINT);
       const logs = await response.json();
 
       const putLogs = logs.filter(
         (log: { method: string; path: string }) =>
-          log.method === 'PUT' && log.path === '/api/nonexistent-put'
+          log.method === 'PUT' && log.path === '/api/v1/system-integration/nonexistent-put'
       );
       expect(putLogs.length).toBeGreaterThan(0);
     });
 
     test('logs DELETE requests', async ({ request }) => {
-      await request.delete(`${API_BASE_URL}/api/nonexistent-delete`);
+      await request.delete(`${API_BASE_URL}/api/v1/system-integration/nonexistent-delete`);
 
       const response = await request.get(ERROR_LOGS_ENDPOINT);
       const logs = await response.json();
 
       const deleteLogs = logs.filter(
         (log: { method: string; path: string }) =>
-          log.method === 'DELETE' && log.path === '/api/nonexistent-delete'
+          log.method === 'DELETE' && log.path === '/api/v1/system-integration/nonexistent-delete'
       );
       expect(deleteLogs.length).toBeGreaterThan(0);
     });

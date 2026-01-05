@@ -23,6 +23,12 @@ export const TEST_USER_CREDENTIALS = {
 };
 
 /**
+ * Invalid token for testing 401 Unauthorized scenarios
+ * This is intentionally invalid and used for error testing only
+ */
+export const INVALID_TEST_TOKEN = 'invalid-token-for-testing-401-responses';
+
+/**
  * Performs login with admin credentials
  * Roles: admin, hr_manager, user
  * @param page - Playwright Page object
