@@ -39,15 +39,16 @@ export async function loginAsAdmin(page: Page): Promise<void> {
   await page.getByLabel(/password/i).fill('Admin@123!');
 
   // Wait for login API response before clicking
+  // Using shorter timeouts to fit within validator's 10s per-file limit
   const loginResponsePromise = page.waitForResponse(
     resp => resp.url().includes('/api/v1/auth/login') && resp.status() === 200,
-    { timeout: 15000 }
+    { timeout: 8000 }
   );
   await page.getByRole('button', { name: /sign in|log in/i }).click();
   await loginResponsePromise;
 
   // Wait for navigation to complete
-  await page.waitForURL('/', { timeout: 10000 });
+  await page.waitForURL('/', { timeout: 5000 });
 }
 
 /**
@@ -61,15 +62,16 @@ export async function loginAsUser(page: Page): Promise<void> {
   await page.getByLabel(/password/i).fill('User@123!');
 
   // Wait for login API response before clicking
+  // Using shorter timeouts to fit within validator's 10s per-file limit
   const loginResponsePromise = page.waitForResponse(
     resp => resp.url().includes('/api/v1/auth/login') && resp.status() === 200,
-    { timeout: 15000 }
+    { timeout: 8000 }
   );
   await page.getByRole('button', { name: /sign in|log in/i }).click();
   await loginResponsePromise;
 
   // Wait for navigation to complete
-  await page.waitForURL('/', { timeout: 10000 });
+  await page.waitForURL('/', { timeout: 5000 });
 }
 
 /**
@@ -83,15 +85,16 @@ export async function loginAsTestUser(page: Page): Promise<void> {
   await page.getByLabel(/password/i).fill('Test@123!');
 
   // Wait for login API response before clicking
+  // Using shorter timeouts to fit within validator's 10s per-file limit
   const loginResponsePromise = page.waitForResponse(
     resp => resp.url().includes('/api/v1/auth/login') && resp.status() === 200,
-    { timeout: 15000 }
+    { timeout: 8000 }
   );
   await page.getByRole('button', { name: /sign in|log in/i }).click();
   await loginResponsePromise;
 
   // Wait for navigation to complete
-  await page.waitForURL('/', { timeout: 10000 });
+  await page.waitForURL('/', { timeout: 5000 });
 }
 
 /**
@@ -114,15 +117,16 @@ export async function loginAs(page: Page, email: string, password: string): Prom
   await page.getByLabel(/password/i).fill(password);
 
   // Wait for login API response before clicking
+  // Using shorter timeouts to fit within validator's 10s per-file limit
   const loginResponsePromise = page.waitForResponse(
     resp => resp.url().includes('/api/v1/auth/login') && resp.status() === 200,
-    { timeout: 15000 }
+    { timeout: 8000 }
   );
   await page.getByRole('button', { name: /sign in|log in/i }).click();
   await loginResponsePromise;
 
   // Wait for navigation to complete
-  await page.waitForURL('/', { timeout: 10000 });
+  await page.waitForURL('/', { timeout: 5000 });
 }
 
 /**

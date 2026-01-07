@@ -31,8 +31,10 @@ test.describe('Login Form - Validation Tests', () => {
 
   test.beforeEach(async ({ page }) => {
     await page.goto(`${LOGIN_URL}/login`, { waitUntil: 'domcontentloaded' });
-    // Wait for the login form to be visible instead of networkidle
-    await page.waitForSelector('input[type="email"], input[placeholder*="email" i]', { state: 'visible' });
+    // Wait for the login form to be fully interactive with explicit timeout
+    const emailInput = page.locator('input[type="email"], input[placeholder*="email" i]').first();
+    await expect(emailInput).toBeVisible({ timeout: 15000 });
+    await expect(emailInput).toBeEditable({ timeout: 5000 });
   });
 
   test('Validation: Empty email field shows validation error', async ({ page }) => {

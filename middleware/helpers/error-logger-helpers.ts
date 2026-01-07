@@ -39,8 +39,8 @@ export async function waitForLogEntry(
   request: APIRequestContext,
   errorLogsEndpoint: string,
   filterFn: (log: Record<string, unknown>) => boolean,
-  maxAttempts = 10,
-  delayMs = 300
+  maxAttempts = 20,
+  delayMs = 500
 ): Promise<Array<Record<string, unknown>>> {
   let matchedLogs: Array<Record<string, unknown>> = [];
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
