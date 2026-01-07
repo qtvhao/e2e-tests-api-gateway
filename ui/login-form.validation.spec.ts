@@ -23,6 +23,9 @@ import { loadTestConfig } from '../helpers/test-config';
 import { TEST_USERS } from '../helpers/test-users';
 
 test.describe('Login Form - Validation Tests', () => {
+  // Force sequential execution to avoid race conditions with auth state
+  test.describe.configure({ mode: 'serial' });
+
   const config = loadTestConfig();
   const LOGIN_URL = config.baseUrl;
 

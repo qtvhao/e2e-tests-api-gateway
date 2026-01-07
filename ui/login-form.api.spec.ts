@@ -23,6 +23,9 @@ import { loadTestConfig } from '../helpers/test-config';
 import { expectValidApiResponse, expectSuccessResponse } from '../helpers/api-test-utils';
 
 test.describe('Login Form - API Tests', () => {
+  // Force sequential execution to avoid race conditions with auth endpoints
+  test.describe.configure({ mode: 'serial' });
+
   const config = loadTestConfig();
   const API_BASE_URL = config.apiBaseUrl;
   const AUTH_ENDPOINT = `${API_BASE_URL}/api/v1/auth/login`;

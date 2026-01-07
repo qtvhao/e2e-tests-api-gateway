@@ -23,6 +23,9 @@ import {
 // NOTE: These tests use unique paths so they can run in parallel with other test files
 
 test.describe('Error Logger Middleware - Endpoint Tests', () => {
+  // Force sequential execution to avoid race conditions with error logs endpoint
+  test.describe.configure({ mode: 'serial' });
+
   const { API_BASE_URL, ERROR_LOGS_ENDPOINT } = getErrorLoggerConfig();
 
   test('GET /api/v1/admin/error-logs returns JSON array', async ({ request }) => {

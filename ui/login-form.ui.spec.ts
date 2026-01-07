@@ -26,6 +26,9 @@ import { verifyNoErrorBoundary } from '../helpers/ui-test-utils';
 
 // Tests for LoginPage component form submission
 test.describe('Login Form - UI Tests', () => {
+  // Force sequential execution to avoid race conditions with auth state
+  test.describe.configure({ mode: 'serial' });
+
   test('UI: Login page displays form and handles submission', async ({ page }) => {
     // Navigate to login page with faster wait strategy
     await page.goto('/login', { waitUntil: 'domcontentloaded' });

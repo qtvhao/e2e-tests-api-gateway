@@ -24,6 +24,9 @@ import {
 // This allows parallel execution across test files
 
 test.describe('Error Logger Middleware - Log Entry Structure Tests', () => {
+  // Force sequential execution to avoid race conditions with error logs endpoint
+  test.describe.configure({ mode: 'serial' });
+
   const { API_BASE_URL, ERROR_LOGS_ENDPOINT } = getErrorLoggerConfig();
 
   test('log entries contain all required fields', async ({ request }) => {
