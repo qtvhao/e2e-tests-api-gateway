@@ -27,8 +27,9 @@ test.describe('Login Form - Validation Tests', () => {
   const LOGIN_URL = config.baseUrl;
 
   test.beforeEach(async ({ page }) => {
-    await page.goto(`${LOGIN_URL}/login`);
-    await page.waitForLoadState('networkidle');
+    await page.goto(`${LOGIN_URL}/login`, { waitUntil: 'domcontentloaded' });
+    // Wait for the login form to be visible instead of networkidle
+    await page.waitForSelector('input[type="email"], input[placeholder*="email" i]', { state: 'visible' });
   });
 
   test('Validation: Empty email field shows validation error', async ({ page }) => {
@@ -73,15 +74,20 @@ test.describe('Login Form - Validation Tests', () => {
 
     await emailInput.fill(TEST_USERS.invalid.email);
     await passwordInput.fill(TEST_USERS.invalid.password);
+
+    // Wait for the login API response before checking the result
+    const loginResponsePromise = page.waitForResponse(
+      resp => resp.url().includes('/api/v1/auth/login'),
+      { timeout: 10000 }
+    );
     await submitButton.click();
+    await loginResponsePromise;
 
-    // Wait for response and check for error message
-    await page.waitForTimeout(1000);
-    const hasError = await page.locator('div[role="alert"], [class*="error"], [class*="invalid"]').first().isVisible().catch(() => false);
-
-    // Either error is shown or we stay on login page
-    expect(
-      hasError || page.url().includes('login')
-    ).toBeTruthy();
+    // Use polling assertion to check for error message or URL
+    await expect(async () => {
+      const hasError = await page.locator('div[role="alert"], [class*="error"], [class*="invalid"]').first().isVisible().catch(() => false);
+      // Either error is shown or we stay on login page
+      expect(hasError || page.url().includes('login')).toBeTruthy();
+    }).toPass({ timeout: 5000 });
   });
 });

@@ -102,6 +102,9 @@ export function expectJsonContentType(response: APIResponse): void {
 
 /**
  * Validates response is JSON and not a "not found" error, returns parsed body
+ * NOTE: This function does NOT validate status code - use expectSuccessResponse for that
+ * This is intentionally designed for cases where you want to check body regardless of status
+ * (e.g., after already validating status separately)
  * @param response - API response to validate
  * @returns Parsed JSON body
  */
@@ -114,12 +117,17 @@ export async function expectValidApiResponse(response: APIResponse): Promise<Rec
 
 /**
  * Validates successful response (2xx) with JSON body
+ * IMPORTANT: Validates status BEFORE checking body content (per no-permissive-status-expect rule)
+ * This ensures we catch 502/404 errors instead of masking them
  * @param response - API response to validate
  * @returns Parsed JSON body
  */
 export async function expectSuccessResponse(response: APIResponse): Promise<Record<string, unknown>> {
-  const body = await expectValidApiResponse(response);
+  // First validate the status code to fail fast on incorrect status
+  // This catches cases where endpoint doesn't exist (404) or backend is down (502)
   expect(response.ok()).toBe(true);
+  // Then validate JSON format and body content
+  const body = await expectValidApiResponse(response);
   return body;
 }
 
@@ -183,11 +191,14 @@ export async function expectNotFound(response: APIResponse): Promise<Record<stri
 
 /**
  * Validates health check endpoint
+ * IMPORTANT: Validates status BEFORE checking body content (per no-permissive-status-expect rule)
  * @param request - Playwright APIRequestContext
  * @param healthEndpoint - Health endpoint URL
  */
 export async function expectHealthy(request: APIRequestContext, healthEndpoint: string): Promise<void> {
   const response = await request.get(healthEndpoint);
-  await expectValidApiResponse(response);
+  // First validate the status code
   expect(response.status()).toBe(200);
+  // Then validate body content
+  await expectValidApiResponse(response);
 }

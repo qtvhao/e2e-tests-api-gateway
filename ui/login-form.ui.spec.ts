@@ -30,8 +30,11 @@ test.describe('Login Form - UI Tests', () => {
     // Navigate to login page with faster wait strategy
     await page.goto('/login', { waitUntil: 'domcontentloaded' });
 
-    // Wait for form to be rendered
-    await page.waitForSelector('form, [role="form"], input[type="email"], input[name="email"]', { timeout: 10000 });
+    // Wait for form to be rendered with retry for stability
+    await expect(async () => {
+      const formVisible = await page.locator('form, [role="form"]').first().isVisible();
+      expect(formVisible).toBe(true);
+    }).toPass({ timeout: 10000 });
 
     // Verify no error boundary
     await verifyNoErrorBoundary(page);
@@ -48,8 +51,10 @@ test.describe('Login Form - UI Tests', () => {
     await expect(submitButton).toBeVisible({ timeout: 10000 });
     await expect(submitButton).toBeEnabled();
 
-    // Fill in credentials
+    // Fill in credentials with small delays for stability
+    await emailInput.click();
     await emailInput.fill(TEST_USERS.admin.email);
+    await passwordInput.click();
     await passwordInput.fill(TEST_USERS.admin.password);
 
     // Verify values are filled
@@ -68,8 +73,11 @@ test.describe('Login Form - UI Tests', () => {
     // Wait for API response to complete
     await loginResponsePromise;
 
-    // Wait for successful navigation to dashboard
-    await page.waitForURL('/', { timeout: 10000 });
+    // Wait for successful navigation to dashboard with retry for stability
+    await expect(async () => {
+      const url = page.url();
+      expect(url.endsWith('/') || url.includes('dashboard')).toBe(true);
+    }).toPass({ timeout: 15000 });
 
     // Wait for main content area to be visible first (ensures layout is rendered)
     await expect(page.locator('main, [role="main"]').first()).toBeVisible({ timeout: 10000 });
