@@ -51,6 +51,7 @@ test.describe('Sentry SDK - Manual Error Capture', () => {
     const response = await request.post(`/sentry/api/${PROJECT_ID}/envelope/`, {
       headers: getSentryRequestHeaders(SENTRY_KEY),
       data: envelope,
+      timeout: 3000, // 3s timeout to fit within validator's 10s per-file limit
     });
 
     expect(response.status()).toBe(200);
@@ -87,6 +88,7 @@ test.describe('Sentry SDK - Manual Error Capture', () => {
     const response = await request.post(`/sentry/api/${PROJECT_ID}/envelope/`, {
       headers: getSentryRequestHeaders(SENTRY_KEY),
       data: envelope,
+      timeout: 3000, // 3s timeout to fit within validator's 10s per-file limit
     });
 
     expect(response.status()).toBe(200);

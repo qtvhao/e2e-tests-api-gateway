@@ -5,6 +5,20 @@ import * as path from 'path';
 // Load environment variables from root .env file
 dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
+// Validate required environment variables
+const colimaVmUrl = process.env.COLIMA_VM_URL;
+const apiBaseUrl = process.env.API_BASE_URL;
+
+if (!colimaVmUrl && !apiBaseUrl) {
+  throw new Error(
+    'COLIMA_VM_URL or API_BASE_URL environment variable must be set.\n' +
+    'Example: export COLIMA_VM_URL=http://192.168.64.2:8080\n' +
+    'Or set it in your .env file.'
+  );
+}
+
+const resolvedApiBaseUrl = apiBaseUrl || `${colimaVmUrl}:8080`;
+
 /**
  * Playwright E2E Test Configuration
  *
@@ -40,8 +54,7 @@ export default defineConfig({
   // Shared settings for all projects
   use: {
     // Base URL for API tests - points to API Gateway
-    // Falls back to COLIMA_VM_URL:8080 if API_BASE_URL is not set
-    baseURL: process.env.API_BASE_URL || (process.env.COLIMA_VM_URL ? `${process.env.COLIMA_VM_URL}:8080` : ''),
+    baseURL: resolvedApiBaseUrl,
 
     // Collect trace when retrying a failed test
     trace: 'on-first-retry',
@@ -68,7 +81,7 @@ export default defineConfig({
       testMatch: /.*\.ui\.spec\.ts$/,
       use: {
         ...devices['Desktop Chrome'],
-        baseURL: process.env.FRONTEND_URL || process.env.API_BASE_URL || (process.env.COLIMA_VM_URL ? `${process.env.COLIMA_VM_URL}:8080` : ''),
+        baseURL: process.env.FRONTEND_URL || resolvedApiBaseUrl,
       },
     },
   ],

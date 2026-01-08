@@ -2,7 +2,7 @@
  * @fileoverview Login Form - API Tests - Form submission endpoints and response validation
  * @see web/app/src/pages/LoginPage.tsx
  *
- * @version 1.0.0
+ * @version 1.0.1
  * @test-type api
  * @form-type login
  * @browsers chromium, api (ONLY - no firefox/webkit)
@@ -23,9 +23,9 @@ import { loadTestConfig } from '../helpers/test-config';
 import { expectValidApiResponse, expectSuccessResponse } from '../helpers/api-test-utils';
 
 test.describe('Login Form - API Tests', () => {
-  // Force sequential execution to avoid race conditions with auth endpoints
   // Add retries for flaky network timing issues
-  test.describe.configure({ mode: 'serial', retries: 2 });
+  // Using default parallel execution (no serial mode) to speed up tests
+  test.describe.configure({ retries: 2 });
 
   const config = loadTestConfig();
   const API_BASE_URL = config.apiBaseUrl;
@@ -33,36 +33,23 @@ test.describe('Login Form - API Tests', () => {
   const HEALTH_ENDPOINT = `${API_BASE_URL}/health`;
 
   test('API: Health check endpoint is available', async ({ request }) => {
-    const response = await request.get(HEALTH_ENDPOINT);
+    const response = await request.get(HEALTH_ENDPOINT, { timeout: 3000 });
     expect(response.status()).toBe(200);
     await expectValidApiResponse(response);
   });
 
-  test('API: Login endpoint accepts POST requests', async ({ request }) => {
+  test('API: Login endpoint returns token and user on success', async ({ request }) => {
+    // Consolidated test: POST request, status validation, and response structure
+    // This reduces overhead from making multiple separate API calls
     const response = await request.post(AUTH_ENDPOINT, {
-      data: TEST_USERS.admin
-    });
-    // Expect successful login with valid credentials
-    await expectSuccessResponse(response);
-  });
-
-  test('API: Login response returns valid status', async ({ request }) => {
-    const response = await request.post(AUTH_ENDPOINT, {
-      data: TEST_USERS.admin
+      data: TEST_USERS.admin,
+      timeout: 3000
     });
 
-    // Expect successful authentication with valid credentials
-    expect(response.status()).toBe(200);
-    await expectValidApiResponse(response);
-  });
-
-  test('API: Successful login includes token and user', async ({ request }) => {
-    const response = await request.post(AUTH_ENDPOINT, {
-      data: TEST_USERS.admin
-    });
-
-    // Only test structure for successful responses
+    // Validate successful response (status + JSON format)
     const body = await expectSuccessResponse(response);
+
+    // Verify response includes required fields
     expect(body).toHaveProperty('token');
     expect(body).toHaveProperty('user');
   });

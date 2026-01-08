@@ -24,8 +24,8 @@ import { TEST_USERS } from '../helpers/test-users';
 
 test.describe('Login Form - Validation Tests', () => {
   // Force sequential execution to avoid race conditions with auth state
-  // Add retries for flaky network timing issues
-  test.describe.configure({ mode: 'serial', retries: 2 });
+  // Removed retries to stay within validator's 10s per-file limit
+  test.describe.configure({ mode: 'serial' });
 
   const config = loadTestConfig();
   const LOGIN_URL = config.baseUrl;
@@ -34,7 +34,7 @@ test.describe('Login Form - Validation Tests', () => {
     await page.goto(`${LOGIN_URL}/login`, { waitUntil: 'domcontentloaded' });
     // Wait for the login form to be fully interactive - reduced timeout for faster execution
     const emailInput = page.locator('input[type="email"], input[placeholder*="email" i]').first();
-    await expect(emailInput).toBeVisible({ timeout: 3000 });
+    await expect(emailInput).toBeVisible({ timeout: 1000 });
   });
 
   test('Validation: Empty email field shows validation error', async ({ page }) => {
@@ -81,11 +81,11 @@ test.describe('Login Form - Validation Tests', () => {
     await passwordInput.fill(TEST_USERS.invalid.password);
 
     // Use Promise.all to start listening BEFORE click to avoid race condition
-    // Increased timeout to 5000ms to fit within 10s file limit
+    // Reduced timeout to 3000ms to fit within 10s file limit
     await Promise.all([
       page.waitForResponse(
         resp => resp.url().includes('/api/v1/auth/login'),
-        { timeout: 5000 }
+        { timeout: 3000 }
       ),
       submitButton.click()
     ]);
