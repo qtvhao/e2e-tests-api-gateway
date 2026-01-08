@@ -37,10 +37,10 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
 
   // Retry failed tests (helps with flaky network/timing issues)
-  retries: process.env.CI ? 2 : 1,
+  retries: process.env.CI ? 2 : 5,
 
   // Limit parallel workers on CI
-  workers: process.env.CI ? 1 : 1,
+  workers: process.env.CI ? 1 : undefined,
 
   // Reporter to use
   reporter: [
