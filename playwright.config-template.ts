@@ -26,7 +26,7 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 1,
 
   // Limit parallel workers on CI
-  workers: process.env.CI ? 1 : undefined,
+  workers: process.env.CI ? 1 : 1,
 
   // Reporter to use
   reporter: [

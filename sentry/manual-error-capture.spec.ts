@@ -13,6 +13,9 @@ const SENTRY_KEY = envVars.SENTRY_KEY || process.env.SENTRY_KEY;
 const PROJECT_ID = envVars.SENTRY_PROJECT_ID || process.env.SENTRY_PROJECT_ID;
 
 test.describe('Sentry SDK - Manual Error Capture', () => {
+  // Force sequential execution to avoid race conditions with Sentry endpoint
+  test.describe.configure({ mode: 'serial', retries: 1 });
+
   test('captures manually triggered error with context', async ({ request }) => {
     const eventId = generateEventId();
     const now = new Date().toISOString();

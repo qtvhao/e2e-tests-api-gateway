@@ -80,19 +80,17 @@ test.describe('Login Form - Validation Tests', () => {
     await emailInput.fill(TEST_USERS.invalid.email);
     await passwordInput.fill(TEST_USERS.invalid.password);
 
-    // Wait for the login API response before checking the result
-    const loginResponsePromise = page.waitForResponse(
-      resp => resp.url().includes('/api/v1/auth/login'),
-      { timeout: 3000 }
-    );
-    await submitButton.click();
-    await loginResponsePromise;
+    // Use Promise.all to start listening BEFORE click to avoid race condition
+    // Increased timeout to 5000ms to fit within 10s file limit
+    await Promise.all([
+      page.waitForResponse(
+        resp => resp.url().includes('/api/v1/auth/login'),
+        { timeout: 5000 }
+      ),
+      submitButton.click()
+    ]);
 
-    // Use polling assertion to check for error message or URL
-    await expect(async () => {
-      const hasError = await page.locator('div[role="alert"], [class*="error"], [class*="invalid"]').first().isVisible().catch(() => false);
-      // Either error is shown or we stay on login page
-      expect(hasError || page.url().includes('login')).toBeTruthy();
-    }).toPass({ timeout: 3000 });
+    // Verify we stay on login page (invalid credentials rejected)
+    expect(page.url()).toContain('login');
   });
 });

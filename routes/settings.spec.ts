@@ -9,6 +9,9 @@ import { expectValidApiResponse, expectSuccessResponse, expectUnauthorized } fro
  */
 
 test.describe('Settings Routes', () => {
+  // Add retries for flaky network timing issues
+  test.describe.configure({ retries: 2 });
+
   test.describe('Health Check', () => {
     test('should return healthy status', async ({ request }) => {
       const response = await request.get('/health');

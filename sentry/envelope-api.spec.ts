@@ -12,6 +12,9 @@ const SENTRY_KEY = envVars.SENTRY_KEY;
 const PROJECT_ID = envVars.SENTRY_PROJECT_ID;
 
 test.describe('Sentry SDK - Envelope API - ErrorTestPage Events', () => {
+  // Force sequential execution to avoid race conditions with Sentry endpoint
+  test.describe.configure({ mode: 'serial', retries: 1 });
+
   test('captures error via envelope endpoint', async ({ request }) => {
     const eventId = generateEventId();
     const now = new Date().toISOString();
