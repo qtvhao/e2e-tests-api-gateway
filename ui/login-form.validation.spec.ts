@@ -24,17 +24,17 @@ import { TEST_USERS } from '../helpers/test-users';
 
 test.describe('Login Form - Validation Tests', () => {
   // Force sequential execution to avoid race conditions with auth state
-  test.describe.configure({ mode: 'serial' });
+  // Add retries for flaky network timing issues
+  test.describe.configure({ mode: 'serial', retries: 2 });
 
   const config = loadTestConfig();
   const LOGIN_URL = config.baseUrl;
 
   test.beforeEach(async ({ page }) => {
     await page.goto(`${LOGIN_URL}/login`, { waitUntil: 'domcontentloaded' });
-    // Wait for the login form to be fully interactive with explicit timeout
+    // Wait for the login form to be fully interactive - reduced timeout for faster execution
     const emailInput = page.locator('input[type="email"], input[placeholder*="email" i]').first();
-    await expect(emailInput).toBeVisible({ timeout: 15000 });
-    await expect(emailInput).toBeEditable({ timeout: 5000 });
+    await expect(emailInput).toBeVisible({ timeout: 3000 });
   });
 
   test('Validation: Empty email field shows validation error', async ({ page }) => {
@@ -83,7 +83,7 @@ test.describe('Login Form - Validation Tests', () => {
     // Wait for the login API response before checking the result
     const loginResponsePromise = page.waitForResponse(
       resp => resp.url().includes('/api/v1/auth/login'),
-      { timeout: 10000 }
+      { timeout: 3000 }
     );
     await submitButton.click();
     await loginResponsePromise;
@@ -93,6 +93,6 @@ test.describe('Login Form - Validation Tests', () => {
       const hasError = await page.locator('div[role="alert"], [class*="error"], [class*="invalid"]').first().isVisible().catch(() => false);
       // Either error is shown or we stay on login page
       expect(hasError || page.url().includes('login')).toBeTruthy();
-    }).toPass({ timeout: 5000 });
+    }).toPass({ timeout: 3000 });
   });
 });

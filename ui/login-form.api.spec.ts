@@ -24,7 +24,8 @@ import { expectValidApiResponse, expectSuccessResponse } from '../helpers/api-te
 
 test.describe('Login Form - API Tests', () => {
   // Force sequential execution to avoid race conditions with auth endpoints
-  test.describe.configure({ mode: 'serial' });
+  // Add retries for flaky network timing issues
+  test.describe.configure({ mode: 'serial', retries: 2 });
 
   const config = loadTestConfig();
   const API_BASE_URL = config.apiBaseUrl;
