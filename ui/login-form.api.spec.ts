@@ -33,7 +33,7 @@ test.describe('Login Form - API Tests', () => {
   const HEALTH_ENDPOINT = `${API_BASE_URL}/health`;
 
   test('API: Health check endpoint is available', async ({ request }) => {
-    const response = await request.get(HEALTH_ENDPOINT, { timeout: 3000 });
+    const response = await request.get(HEALTH_ENDPOINT, { timeout: 2000 });
     expect(response.status()).toBe(200);
     await expectValidApiResponse(response);
   });
@@ -43,7 +43,7 @@ test.describe('Login Form - API Tests', () => {
     // This reduces overhead from making multiple separate API calls
     const response = await request.post(AUTH_ENDPOINT, {
       data: TEST_USERS.admin,
-      timeout: 3000
+      timeout: 2000
     });
 
     // Validate successful response (status + JSON format)

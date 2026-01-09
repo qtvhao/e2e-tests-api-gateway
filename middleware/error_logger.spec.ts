@@ -150,27 +150,25 @@ test.describe('Error Logger Middleware', () => {
       const entry = logs.find((e) => e.path === testPath);
       expect(entry).toBeDefined();
 
-      if (entry) {
-        // Required fields
-        expect(entry).toHaveProperty('timestamp');
-        expect(entry).toHaveProperty('method');
-        expect(entry).toHaveProperty('path');
-        expect(entry).toHaveProperty('status');
-        expect(entry).toHaveProperty('client_ip');
-        expect(entry).toHaveProperty('latency');
+      // Required fields - entry is guaranteed to exist after toBeDefined assertion
+      expect(entry).toHaveProperty('timestamp');
+      expect(entry).toHaveProperty('method');
+      expect(entry).toHaveProperty('path');
+      expect(entry).toHaveProperty('status');
+      expect(entry).toHaveProperty('client_ip');
+      expect(entry).toHaveProperty('latency');
 
-        // Validate types
-        expect(typeof entry.timestamp).toBe('string');
-        expect(typeof entry.method).toBe('string');
-        expect(typeof entry.path).toBe('string');
-        expect(typeof entry.status).toBe('number');
-        expect(typeof entry.client_ip).toBe('string');
-        expect(typeof entry.latency).toBe('string');
+      // Validate types
+      expect(typeof entry!.timestamp).toBe('string');
+      expect(typeof entry!.method).toBe('string');
+      expect(typeof entry!.path).toBe('string');
+      expect(typeof entry!.status).toBe('number');
+      expect(typeof entry!.client_ip).toBe('string');
+      expect(typeof entry!.latency).toBe('string');
 
-        // Validate timestamp is RFC3339 format
-        expect(() => new Date(entry.timestamp)).not.toThrow();
-        expect(new Date(entry.timestamp).toISOString()).toBeDefined();
-      }
+      // Validate timestamp is RFC3339 format
+      expect(() => new Date(entry!.timestamp)).not.toThrow();
+      expect(new Date(entry!.timestamp).toISOString()).toBeDefined();
     });
   });
 });

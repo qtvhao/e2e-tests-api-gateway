@@ -22,6 +22,7 @@
 
 import { test, expect } from '@playwright/test';
 import { TEST_USERS } from '../helpers/test-users';
+import { verifyNoErrorBoundary, verifyPageWithHeading } from '../helpers/ui-test-utils';
 
 // Tests for LoginPage component form submission
 test.describe('Login Form - UI Tests', () => {
@@ -32,6 +33,10 @@ test.describe('Login Form - UI Tests', () => {
   test('UI: Login page displays form and handles submission', async ({ page }) => {
     // Navigate to login page with faster wait strategy
     await page.goto('/login', { waitUntil: 'domcontentloaded' });
+
+    // Verify no error boundary and page content loaded
+    await verifyNoErrorBoundary(page);
+    await verifyPageWithHeading(page, /sign in|login/i);
 
     // Wait for form to be visible - single check instead of separate checks
     const form = page.locator('form, [role="form"]').first();
@@ -54,7 +59,7 @@ test.describe('Login Form - UI Tests', () => {
     // Setup response promise before clicking
     const loginResponsePromise = page.waitForResponse(
       resp => resp.url().includes('/api/v1/auth/login') && resp.status() === 200,
-      { timeout: 4000 }
+      { timeout: 2000 }
     );
 
     // Submit form
@@ -64,6 +69,6 @@ test.describe('Login Form - UI Tests', () => {
     await loginResponsePromise;
 
     // Verify dashboard heading is visible - this confirms successful login and navigation
-    await expect(page.getByRole('heading', { name: /dashboard/i })).toBeVisible({ timeout: 5000 });
+    await expect(page.getByRole('heading', { name: /dashboard/i })).toBeVisible({ timeout: 2000 });
   });
 });

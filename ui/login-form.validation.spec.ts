@@ -85,7 +85,7 @@ test.describe('Login Form - Validation Tests', () => {
     await Promise.all([
       page.waitForResponse(
         resp => resp.url().includes('/api/v1/auth/login'),
-        { timeout: 3000 }
+        { timeout: 2000 }
       ),
       submitButton.click()
     ]);
