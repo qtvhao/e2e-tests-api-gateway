@@ -24,6 +24,39 @@ import {
   TestUser,
 } from './auth';
 
+/**
+ * Verifies that a user cannot authenticate (i.e., has been deleted).
+ * Includes retry logic to handle LDAP propagation delays.
+ *
+ * @param request - Playwright APIRequestContext
+ * @param email - User email
+ * @param password - User password
+ * @param maxRetries - Maximum number of retries (default: 5)
+ * @param delayMs - Delay between retries in ms (default: 500)
+ * @returns true if user cannot authenticate, throws if user can still authenticate after all retries
+ */
+async function verifyUserCannotAuthenticate(
+  request: Parameters<typeof getAuthToken>[0],
+  email: string,
+  password: string,
+  maxRetries = 5,
+  delayMs = 500
+): Promise<boolean> {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      await getAuthToken(request, email, password);
+      // If we get here, auth succeeded - user still exists
+      if (attempt < maxRetries) {
+        await new Promise(resolve => setTimeout(resolve, delayMs));
+      }
+    } catch {
+      // Auth failed - user is deleted
+      return true;
+    }
+  }
+  throw new Error(`User ${email} can still authenticate after ${maxRetries} attempts - deletion may not have propagated`);
+}
+
 test.describe('Test User Management Utilities', () => {
   const config = loadTestConfig();
 
@@ -115,10 +148,9 @@ test.describe('Test User Management Utilities', () => {
       // Delete the user
       await deleteTestUser(request, user.id);
 
-      // Verify user cannot authenticate after deletion
-      await expect(
-        getAuthToken(request, user.email, user.password)
-      ).rejects.toThrow();
+      // Verify user cannot authenticate after deletion (with retry for LDAP propagation)
+      const isDeleted = await verifyUserCannotAuthenticate(request, user.email, user.password);
+      expect(isDeleted).toBe(true);
     });
 
     test('handles already-deleted user gracefully (idempotent)', async ({ request }) => {
@@ -261,13 +293,11 @@ test.describe('Test User Management Utilities', () => {
       // Verify users list is cleared
       expect(manager.getCreatedUsers()).toHaveLength(0);
 
-      // Verify users cannot authenticate after cleanup
-      await expect(
-        getAuthToken(request, user1Email, user1Password)
-      ).rejects.toThrow();
-      await expect(
-        getAuthToken(request, user2Email, user2Password)
-      ).rejects.toThrow();
+      // Verify users cannot authenticate after cleanup (with retry for LDAP propagation)
+      const user1Deleted = await verifyUserCannotAuthenticate(request, user1Email, user1Password);
+      const user2Deleted = await verifyUserCannotAuthenticate(request, user2Email, user2Password);
+      expect(user1Deleted).toBe(true);
+      expect(user2Deleted).toBe(true);
     });
 
     test('cleanup is idempotent', async ({ request }) => {
@@ -301,10 +331,9 @@ test.describe('Test User Management Utilities', () => {
       // Step 4: Delete user
       await deleteTestUser(request, user.id);
 
-      // Step 5: Verify deletion
-      await expect(
-        getAuthToken(request, user.email, user.password)
-      ).rejects.toThrow();
+      // Step 5: Verify deletion (with retry for LDAP propagation)
+      const isDeleted = await verifyUserCannotAuthenticate(request, user.email, user.password);
+      expect(isDeleted).toBe(true);
     });
   });
 

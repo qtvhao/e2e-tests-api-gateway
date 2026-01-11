@@ -183,12 +183,30 @@ export async function createAuthenticatedTestUser(
 ): Promise<TestUser & { authToken: string }> {
   const user = await createTestUser(request, options);
 
-  const authToken = await getAuthToken(request, user.email, user.password);
+  // Retry authentication to handle LDAP propagation delays
+  const maxRetries = 5;
+  const delayMs = 500;
+  let lastError: Error | null = null;
 
-  return {
-    ...user,
-    authToken
-  };
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const authToken = await getAuthToken(request, user.email, user.password);
+      return {
+        ...user,
+        authToken
+      };
+    } catch (error) {
+      lastError = error as Error;
+      if (attempt < maxRetries) {
+        await new Promise(resolve => setTimeout(resolve, delayMs));
+      }
+    }
+  }
+
+  throw new Error(
+    `Failed to authenticate newly created user ${user.email} after ${maxRetries} attempts. ` +
+    `Last error: ${lastError?.message}. LDAP propagation may be slow.`
+  );
 }
 
 /**
