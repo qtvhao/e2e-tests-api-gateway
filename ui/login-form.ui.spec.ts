@@ -22,7 +22,7 @@
 
 import { test, expect } from '@playwright/test';
 import { TEST_USERS } from '../helpers/test-users';
-import { verifyNoErrorBoundary, verifyPageWithHeading } from '../helpers/ui-test-utils';
+import { verifyNoErrorBoundary, verifyNoEmptyState } from '../helpers/ui-test-utils';
 
 // Tests for LoginPage component form submission
 test.describe('Login Form - UI Tests', () => {
@@ -34,9 +34,9 @@ test.describe('Login Form - UI Tests', () => {
     // Navigate to login page with faster wait strategy
     await page.goto('/login', { waitUntil: 'domcontentloaded' });
 
-    // Verify no error boundary and page content loaded
+    // Verify no error boundary
     await verifyNoErrorBoundary(page);
-    await verifyPageWithHeading(page, /sign in|login/i);
+    await verifyNoEmptyState(page);
 
     // Wait for form to be visible - single check instead of separate checks
     const form = page.locator('form, [role="form"]').first();

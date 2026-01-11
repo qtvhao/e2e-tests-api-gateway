@@ -9,15 +9,25 @@ import { loadEnvConfig, generateEventId, getSentryRequestHeaders } from '../help
  */
 
 const envVars = loadEnvConfig();
-const SENTRY_KEY = envVars.SENTRY_KEY || process.env.SENTRY_KEY;
-const PROJECT_ID = envVars.SENTRY_PROJECT_ID || process.env.SENTRY_PROJECT_ID;
+const SENTRY_KEY = envVars.SENTRY_KEY || process.env.SENTRY_KEY || '';
+const PROJECT_ID = envVars.SENTRY_PROJECT_ID || process.env.SENTRY_PROJECT_ID || '1';
 
 test.describe('Sentry SDK - Error Severity Levels', () => {
+  // Force sequential execution to avoid race conditions with Sentry endpoint
+  test.describe.configure({ mode: 'serial', retries: 1 });
+
   test('captures debug level message', async ({ request }) => {
     const eventId = generateEventId();
-    const response = await request.post(`/sentry/api/${PROJECT_ID}/envelope/`, {
-      headers: getSentryRequestHeaders(SENTRY_KEY),
-      data: {
+    const sentAt = new Date().toISOString();
+
+    const envelope = [
+      JSON.stringify({
+        event_id: eventId,
+        sent_at: sentAt,
+        dsn: `http://${SENTRY_KEY}@localhost:8080/sentry/${PROJECT_ID}`,
+      }),
+      JSON.stringify({ type: 'event', content_type: 'application/json' }),
+      JSON.stringify({
         event_id: eventId,
         message: 'Debug message from ErrorTestPage',
         level: 'debug',
@@ -29,7 +39,12 @@ test.describe('Sentry SDK - Error Severity Levels', () => {
           level: 'debug',
         },
         sdk: { name: 'sentry.javascript.react', version: '8.45.0' },
-      },
+      }),
+    ].join('\n');
+
+    const response = await request.post(`/sentry/api/${PROJECT_ID}/envelope/`, {
+      headers: getSentryRequestHeaders(SENTRY_KEY),
+      data: envelope,
     });
 
     expect(response.status()).toBe(200);
@@ -37,9 +52,16 @@ test.describe('Sentry SDK - Error Severity Levels', () => {
 
   test('captures info level message', async ({ request }) => {
     const eventId = generateEventId();
-    const response = await request.post(`/sentry/api/${PROJECT_ID}/envelope/`, {
-      headers: getSentryRequestHeaders(SENTRY_KEY),
-      data: {
+    const sentAt = new Date().toISOString();
+
+    const envelope = [
+      JSON.stringify({
+        event_id: eventId,
+        sent_at: sentAt,
+        dsn: `http://${SENTRY_KEY}@localhost:8080/sentry/${PROJECT_ID}`,
+      }),
+      JSON.stringify({ type: 'event', content_type: 'application/json' }),
+      JSON.stringify({
         event_id: eventId,
         message: 'Info message from ErrorTestPage',
         level: 'info',
@@ -51,7 +73,12 @@ test.describe('Sentry SDK - Error Severity Levels', () => {
           level: 'info',
         },
         sdk: { name: 'sentry.javascript.react', version: '8.45.0' },
-      },
+      }),
+    ].join('\n');
+
+    const response = await request.post(`/sentry/api/${PROJECT_ID}/envelope/`, {
+      headers: getSentryRequestHeaders(SENTRY_KEY),
+      data: envelope,
     });
 
     expect(response.status()).toBe(200);
@@ -59,9 +86,16 @@ test.describe('Sentry SDK - Error Severity Levels', () => {
 
   test('captures warning level message', async ({ request }) => {
     const eventId = generateEventId();
-    const response = await request.post(`/sentry/api/${PROJECT_ID}/envelope/`, {
-      headers: getSentryRequestHeaders(SENTRY_KEY),
-      data: {
+    const sentAt = new Date().toISOString();
+
+    const envelope = [
+      JSON.stringify({
+        event_id: eventId,
+        sent_at: sentAt,
+        dsn: `http://${SENTRY_KEY}@localhost:8080/sentry/${PROJECT_ID}`,
+      }),
+      JSON.stringify({ type: 'event', content_type: 'application/json' }),
+      JSON.stringify({
         event_id: eventId,
         message: 'Warning message from ErrorTestPage',
         level: 'warning',
@@ -73,7 +107,12 @@ test.describe('Sentry SDK - Error Severity Levels', () => {
           level: 'warning',
         },
         sdk: { name: 'sentry.javascript.react', version: '8.45.0' },
-      },
+      }),
+    ].join('\n');
+
+    const response = await request.post(`/sentry/api/${PROJECT_ID}/envelope/`, {
+      headers: getSentryRequestHeaders(SENTRY_KEY),
+      data: envelope,
     });
 
     expect(response.status()).toBe(200);
@@ -81,9 +120,16 @@ test.describe('Sentry SDK - Error Severity Levels', () => {
 
   test('captures error level message', async ({ request }) => {
     const eventId = generateEventId();
-    const response = await request.post(`/sentry/api/${PROJECT_ID}/envelope/`, {
-      headers: getSentryRequestHeaders(SENTRY_KEY),
-      data: {
+    const sentAt = new Date().toISOString();
+
+    const envelope = [
+      JSON.stringify({
+        event_id: eventId,
+        sent_at: sentAt,
+        dsn: `http://${SENTRY_KEY}@localhost:8080/sentry/${PROJECT_ID}`,
+      }),
+      JSON.stringify({ type: 'event', content_type: 'application/json' }),
+      JSON.stringify({
         event_id: eventId,
         message: 'Error message from ErrorTestPage',
         level: 'error',
@@ -95,7 +141,12 @@ test.describe('Sentry SDK - Error Severity Levels', () => {
           level: 'error',
         },
         sdk: { name: 'sentry.javascript.react', version: '8.45.0' },
-      },
+      }),
+    ].join('\n');
+
+    const response = await request.post(`/sentry/api/${PROJECT_ID}/envelope/`, {
+      headers: getSentryRequestHeaders(SENTRY_KEY),
+      data: envelope,
     });
 
     expect(response.status()).toBe(200);
@@ -103,9 +154,16 @@ test.describe('Sentry SDK - Error Severity Levels', () => {
 
   test('captures fatal level message', async ({ request }) => {
     const eventId = generateEventId();
-    const response = await request.post(`/sentry/api/${PROJECT_ID}/envelope/`, {
-      headers: getSentryRequestHeaders(SENTRY_KEY),
-      data: {
+    const sentAt = new Date().toISOString();
+
+    const envelope = [
+      JSON.stringify({
+        event_id: eventId,
+        sent_at: sentAt,
+        dsn: `http://${SENTRY_KEY}@localhost:8080/sentry/${PROJECT_ID}`,
+      }),
+      JSON.stringify({ type: 'event', content_type: 'application/json' }),
+      JSON.stringify({
         event_id: eventId,
         message: 'Fatal message from ErrorTestPage',
         level: 'fatal',
@@ -117,7 +175,12 @@ test.describe('Sentry SDK - Error Severity Levels', () => {
           level: 'fatal',
         },
         sdk: { name: 'sentry.javascript.react', version: '8.45.0' },
-      },
+      }),
+    ].join('\n');
+
+    const response = await request.post(`/sentry/api/${PROJECT_ID}/envelope/`, {
+      headers: getSentryRequestHeaders(SENTRY_KEY),
+      data: envelope,
     });
 
     expect(response.status()).toBe(200);

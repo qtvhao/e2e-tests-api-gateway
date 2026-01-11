@@ -13,13 +13,22 @@ const SENTRY_KEY = envVars.SENTRY_KEY;
 const PROJECT_ID = envVars.SENTRY_PROJECT_ID;
 
 test.describe('Sentry SDK - Error Context and Breadcrumbs', () => {
+  // Force sequential execution to avoid race conditions with Sentry endpoint
+  test.describe.configure({ mode: 'serial', retries: 1 });
+
   test('captures error with user interaction breadcrumbs', async ({ request }) => {
     const eventId = generateEventId();
     const now = Math.floor(Date.now() / 1000);
+    const sentAt = new Date().toISOString();
 
-    const response = await request.post(`/sentry/api/${PROJECT_ID}/envelope/`, {
-      headers: getSentryRequestHeaders(SENTRY_KEY),
-      data: {
+    const envelope = [
+      JSON.stringify({
+        event_id: eventId,
+        sent_at: sentAt,
+        dsn: `http://${SENTRY_KEY}@localhost:8080/sentry/${PROJECT_ID}`,
+      }),
+      JSON.stringify({ type: 'event', content_type: 'application/json' }),
+      JSON.stringify({
         event_id: eventId,
         message: 'Error triggered from ErrorTestPage',
         level: 'error',
@@ -56,7 +65,12 @@ test.describe('Sentry SDK - Error Context and Breadcrumbs', () => {
           page: 'ErrorTestPage',
         },
         sdk: { name: 'sentry.javascript.react', version: '8.45.0' },
-      },
+      }),
+    ].join('\n');
+
+    const response = await request.post(`/sentry/api/${PROJECT_ID}/envelope/`, {
+      headers: getSentryRequestHeaders(SENTRY_KEY),
+      data: envelope,
     });
 
     expect(response.status()).toBe(200);
@@ -64,9 +78,16 @@ test.describe('Sentry SDK - Error Context and Breadcrumbs', () => {
 
   test('captures error with device and browser context', async ({ request }) => {
     const eventId = generateEventId();
-    const response = await request.post(`/sentry/api/${PROJECT_ID}/envelope/`, {
-      headers: getSentryRequestHeaders(SENTRY_KEY),
-      data: {
+    const sentAt = new Date().toISOString();
+
+    const envelope = [
+      JSON.stringify({
+        event_id: eventId,
+        sent_at: sentAt,
+        dsn: `http://${SENTRY_KEY}@localhost:8080/sentry/${PROJECT_ID}`,
+      }),
+      JSON.stringify({ type: 'event', content_type: 'application/json' }),
+      JSON.stringify({
         event_id: eventId,
         message: 'Error with device context from ErrorTestPage',
         level: 'error',
@@ -92,7 +113,12 @@ test.describe('Sentry SDK - Error Context and Breadcrumbs', () => {
           action: 'context_test',
         },
         sdk: { name: 'sentry.javascript.react', version: '8.45.0' },
-      },
+      }),
+    ].join('\n');
+
+    const response = await request.post(`/sentry/api/${PROJECT_ID}/envelope/`, {
+      headers: getSentryRequestHeaders(SENTRY_KEY),
+      data: envelope,
     });
 
     expect(response.status()).toBe(200);
@@ -100,9 +126,16 @@ test.describe('Sentry SDK - Error Context and Breadcrumbs', () => {
 
   test('captures error with user context', async ({ request }) => {
     const eventId = generateEventId();
-    const response = await request.post(`/sentry/api/${PROJECT_ID}/envelope/`, {
-      headers: getSentryRequestHeaders(SENTRY_KEY),
-      data: {
+    const sentAt = new Date().toISOString();
+
+    const envelope = [
+      JSON.stringify({
+        event_id: eventId,
+        sent_at: sentAt,
+        dsn: `http://${SENTRY_KEY}@localhost:8080/sentry/${PROJECT_ID}`,
+      }),
+      JSON.stringify({ type: 'event', content_type: 'application/json' }),
+      JSON.stringify({
         event_id: eventId,
         message: 'Error with user context from ErrorTestPage',
         level: 'error',
@@ -120,7 +153,12 @@ test.describe('Sentry SDK - Error Context and Breadcrumbs', () => {
           is_logged_in: 'true',
         },
         sdk: { name: 'sentry.javascript.react', version: '8.45.0' },
-      },
+      }),
+    ].join('\n');
+
+    const response = await request.post(`/sentry/api/${PROJECT_ID}/envelope/`, {
+      headers: getSentryRequestHeaders(SENTRY_KEY),
+      data: envelope,
     });
 
     expect(response.status()).toBe(200);

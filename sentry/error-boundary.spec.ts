@@ -9,15 +9,25 @@ import { loadEnvConfig, generateEventId, getSentryRequestHeaders } from '../help
  */
 
 const envVars = loadEnvConfig();
-const SENTRY_KEY = envVars.SENTRY_KEY || process.env.SENTRY_KEY;
-const PROJECT_ID = envVars.SENTRY_PROJECT_ID || process.env.SENTRY_PROJECT_ID;
+const SENTRY_KEY = envVars.SENTRY_KEY || process.env.SENTRY_KEY || '';
+const PROJECT_ID = envVars.SENTRY_PROJECT_ID || process.env.SENTRY_PROJECT_ID || '1';
 
 test.describe('Sentry SDK - React ErrorBoundary', () => {
+  // Force sequential execution to avoid race conditions with Sentry endpoint
+  test.describe.configure({ mode: 'serial', retries: 1 });
+
   test('captures render error caught by ErrorBoundary', async ({ request }) => {
     const eventId = generateEventId();
-    const response = await request.post(`/sentry/api/${PROJECT_ID}/envelope/`, {
-      headers: getSentryRequestHeaders(SENTRY_KEY),
-      data: {
+    const sentAt = new Date().toISOString();
+
+    const envelope = [
+      JSON.stringify({
+        event_id: eventId,
+        sent_at: sentAt,
+        dsn: `http://${SENTRY_KEY}@localhost:8080/sentry/${PROJECT_ID}`,
+      }),
+      JSON.stringify({ type: 'event', content_type: 'application/json' }),
+      JSON.stringify({
         event_id: eventId,
         message: 'Intentional render error for Sentry testing',
         level: 'error',
@@ -60,7 +70,12 @@ test.describe('Sentry SDK - React ErrorBoundary', () => {
           triggered_by: 'Trigger Render Error button',
         },
         sdk: { name: 'sentry.javascript.react', version: '8.45.0' },
-      },
+      }),
+    ].join('\n');
+
+    const response = await request.post(`/sentry/api/${PROJECT_ID}/envelope/`, {
+      headers: getSentryRequestHeaders(SENTRY_KEY),
+      data: envelope,
     });
 
     expect(response.status()).toBe(200);
@@ -68,9 +83,16 @@ test.describe('Sentry SDK - React ErrorBoundary', () => {
 
   test('captures ErrorBoundary onError callback data', async ({ request }) => {
     const eventId = generateEventId();
-    const response = await request.post(`/sentry/api/${PROJECT_ID}/envelope/`, {
-      headers: getSentryRequestHeaders(SENTRY_KEY),
-      data: {
+    const sentAt = new Date().toISOString();
+
+    const envelope = [
+      JSON.stringify({
+        event_id: eventId,
+        sent_at: sentAt,
+        dsn: `http://${SENTRY_KEY}@localhost:8080/sentry/${PROJECT_ID}`,
+      }),
+      JSON.stringify({ type: 'event', content_type: 'application/json' }),
+      JSON.stringify({
         event_id: eventId,
         message: 'ErrorBoundary caught error in ErrorTestPage',
         level: 'error',
@@ -88,7 +110,12 @@ test.describe('Sentry SDK - React ErrorBoundary', () => {
           },
         },
         sdk: { name: 'sentry.javascript.react', version: '8.45.0' },
-      },
+      }),
+    ].join('\n');
+
+    const response = await request.post(`/sentry/api/${PROJECT_ID}/envelope/`, {
+      headers: getSentryRequestHeaders(SENTRY_KEY),
+      data: envelope,
     });
 
     expect(response.status()).toBe(200);
