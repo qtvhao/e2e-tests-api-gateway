@@ -1,3 +1,10 @@
+/**
+ * TEMPLATE: Playwright E2E Test Configuration
+ *
+ * This is a template file. The active config is at e2e/playwright.config.ts
+ * Copy this file and update paths as needed for new test directories.
+ */
+
 import { defineConfig, devices } from '@playwright/test';
 import * as dotenv from 'dotenv';
 import * as path from 'path';
@@ -51,16 +58,25 @@ export default defineConfig({
   // Global timeout for tests
   timeout: 10000,
 
+  // Expect timeout for assertions (toBeVisible, toHaveText, etc.)
+  // Must match ESLint rule: no-excessive-timeout (max 2000ms)
+  expect: {
+    timeout: 2000,
+  },
+
   // Shared settings for all projects
   use: {
     // Base URL for API tests - points to API Gateway
     baseURL: resolvedApiBaseUrl,
 
-    // Collect trace when retrying a failed test
-    trace: 'on-first-retry',
+    // Collect trace only when test fails (includes DOM snapshots, network)
+    trace: 'retain-on-failure',
 
-    // Screenshot on failure
-    screenshot: 'only-on-failure',
+    // Screenshot on failure (full page capture)
+    screenshot: {
+      mode: 'only-on-failure',
+      fullPage: true,
+    },
   },
 
   // Configure projects for different test types
