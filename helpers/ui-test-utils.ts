@@ -48,3 +48,20 @@ export async function verifyPageLoaded(page: Page, urlPattern?: RegExp): Promise
   }
   await verifyMainContent(page);
 }
+
+/**
+ * Verify page loaded without empty state
+ *
+ * Empty states are UI patterns that show when required data is missing,
+ * such as "Cannot Create Assignment" when no employees/projects exist.
+ *
+ * This helper verifies that the page shows actual content (form, list, etc.)
+ * and NOT an empty state blocking message.
+ *
+ * Detection method:
+ * - Uses data-testid="empty-state" from EmptyState component
+ * - See: web/app/src/components/ui/EmptyState.tsx
+ */
+export async function verifyNoEmptyState(page: Page): Promise<void> {
+  await expect(page.getByTestId('empty-state')).not.toBeVisible();
+}
